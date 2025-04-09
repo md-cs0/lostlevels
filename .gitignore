@@ -1,0 +1,7 @@
+# Ignore user data for Lost Levels.
+logging/
+saves/*.*
+
+# Ignore all Python bytecode files.
+**/__pycache__/
+**/*.pyc
