@@ -287,6 +287,28 @@ class LevelGenerator():
         # Return the tiles.
         return [tile1, tile2]
     
+    # Insert a power-up into a power-up block. Set fixed to false if
+    # the power-up should be released immediately after hitting the power-up
+    # block.
+    def insert_powerup(self, block, classname, speed = 75, fixed = True):
+        # Verify whether this is a power-up block.
+        if not isinstance(block, lostlevels.sprites.PowerupBlock):
+            self.__engine.console.warn(f"[Lost Levels]: entity {id(block)} is not a power-up block!")
+            return
+        
+        # Create a function for hooking the power-up block's release_fixed event too.
+        def release_fixed(self_block):
+            powerup = self_block._engine.create_entity_by_class(classname, self_block)
+            if isinstance(powerup, lostlevels.sprites.Moveable):
+                powerup.speed = speed
+            powerup.set_baseorigin(self_block.get_baseorigin())
+            powerup.level = self.__level
+            powerup._engine.console.log(f"[Lost Levels]: player released power-up \"{classname}\"")
+
+        # Configure the power-up block's events.
+        block.get_event("release" if fixed else "release_fixed").set_func(lambda self: None)
+        block.get_event("release_fixed" if fixed else "release").set_func(release_fixed)
+    
     # Internal code for generating an array of tiles.
     def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False):
         ents = []

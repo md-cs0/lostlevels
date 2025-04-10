@@ -88,14 +88,14 @@ class Sprite(entity.Entity):
         # Re-render the texture if the index changed or if it is null.
         if not self.__texture or self.index != self.__oldindex:
             self.__oldindex = self.index
-            self.__texture = pygame.Surface((self._rect.width, self._rect.height),
+            self.__texture = pygame.Surface((self._absrect.width, self._absrect.height),
                                             pygame.SRCALPHA)
             self.__texture.blit(self.__tiles[self.index % len(self.__tiles)], (0, 0))
             if self.__flip_x or self.__flip_y:
                 self.__texture = pygame.transform.flip(self.__texture, self.__flip_x, self.__flip_y)
 
         # Blit the current texture.
-        screen.blit(self.__texture, self._rect)
+        screen.blit(self.__texture, self._absrect)
 
     # Return how many tile entries are present for the loaded tileset.
     def get_tileset_count(self):

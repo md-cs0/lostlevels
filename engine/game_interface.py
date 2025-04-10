@@ -1,12 +1,12 @@
 """An interface for defining your own game."""
 
-import engine
+from . import main
 
 # Use this interface to implement your game.
 class Game():
     # Compose the engine with this game instance.
     def __init__(self, llengine):
-        self._engine: engine.LLEngine = llengine
+        self._engine: main.LLEngine = llengine
 
     # Called when the engine is being started.
     def init(self):

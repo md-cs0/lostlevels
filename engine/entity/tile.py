@@ -73,4 +73,4 @@ class Tile(entity.Entity):
 
     # Draw this map tile entity.
     def draw_tile(self, screen):
-        screen.blit(self.__texture, self._rect)
+        screen.blit(self.__texture, self._absrect)

@@ -368,7 +368,7 @@ class LLEngine():
         self.__entity_types[name] = entity_type
 
     # Create a new entity by classname, assigning it to the entity linked list.
-    def create_entity_by_class(self, classname):
+    def create_entity_by_class(self, classname, before = None):
         # Throw an error if the classname is invalid!
         if classname not in self.__entity_types:
             self.console.error(f"entity classname \"{classname}\" is invalid!")
@@ -377,12 +377,25 @@ class LLEngine():
         newEnt = self.__entity_types[classname](self, classname)
 
         # Link the entity to the entities linked list.
-        newEnt.prev = self.__entity_tail
-        if newEnt.prev:
-            newEnt.prev.next = newEnt
-        if not self.__entity_head:
-            self.__entity_head = newEnt
-        self.__entity_tail = newEnt
+        if before:
+            # Check that the given entity is an actual entity.
+            if not isinstance(before, entity.Entity):
+                self.console.error(f"object {id(before)} is not an entity!")
+
+            # This entity should be linked before the given entity.
+            newEnt.prev = before.prev
+            if newEnt.prev:
+                newEnt.prev.next = newEnt
+            newEnt.next = before
+            before.prev = newEnt
+        else:
+            # Insert the entity at the end of the linked list instead.
+            newEnt.prev = self.__entity_tail
+            if newEnt.prev:
+                newEnt.prev.next = newEnt
+            if not self.__entity_head:
+                self.__entity_head = newEnt
+            self.__entity_tail = newEnt
 
         # Return the entity.
         return newEnt
@@ -530,7 +543,7 @@ class LLEngine():
         # physics engine, and check whether they overlap with the given
         # rectangle, and return it.
         entities = self.__physics.query_entities(start, end, include_nocollide)
-        entities[:] = [ent for ent in entities if hitbox.colliderect(ent._rect)]
+        entities[:] = [ent for ent in entities if hitbox.colliderect(ent._baserect)] # NEW CODE #
         return entities
     
     # Get the number of entities that currently exist.

@@ -20,7 +20,8 @@ class Entity():
         # Set some basic identifiable attributes for this entity.
         self.__classname = classname
         self.__events = dict()
-        self._rect = pygame.Rect(0, 0, 0, 0)
+        self._absrect = pygame.Rect(0, 0, 0, 0)
+        self._baserect = pygame.Rect(0, 0, 0, 0)
         self._engine = engine
         self.active = False
         self.draw = True
@@ -67,24 +68,24 @@ class Entity():
     
     # Get the top-left absolute origin of this entity.
     def get_abstopleft(self):
-        return pygame.math.Vector2(self._rect.left, -self._rect.top)
+        return pygame.math.Vector2(self._absrect.left, -self._absrect.top)
     
     # Get the top-right absolute origin of this entity.
     def get_abstopright(self):
-        return pygame.math.Vector2(self._rect.right, -self._rect.top)
+        return pygame.math.Vector2(self._absrect.right, -self._absrect.top)
     
     # Get the bottom-left absolute origin of this entity.
     def get_absbottomleft(self):
-        return pygame.math.Vector2(self._rect.left, -self._rect.bottom)
+        return pygame.math.Vector2(self._absrect.left, -self._absrect.bottom)
     
     # Get the bottom-right absolute origin of this entity.
     def get_absbottomright(self):
-        return pygame.math.Vector2(self._rect.right, -self._rect.bottom)
+        return pygame.math.Vector2(self._absrect.right, -self._absrect.bottom)
     
     # Get the centre absolute origin of this entity.
     def get_abscentre(self):
-        return pygame.math.Vector2(self._rect.left + self._rect.width // 2, 
-                                   -self._rect.bottom - self._rect.height // 2)
+        return pygame.math.Vector2(self._absrect.left + self._absrect.width // 2, 
+                                   -self._absrect.bottom - self._absrect.height // 2)
     
     # Get the top-left base origin of this entity.
     def get_topleft(self):
@@ -129,8 +130,10 @@ class Entity():
             self.dirty = True
         self.__baseorigin = vec
         absorigin = self.get_absorigin()
-        self._rect.left = absorigin.x
-        self._rect.top = -absorigin.y
+        self._absrect.left = absorigin.x
+        self._absrect.top = -absorigin.y
+        self._baserect.left = self.__baseorigin.x
+        self._baserect.top = -self.__baseorigin.y
 
     # Get the origin displacement of this entity.
     def get_origindisp(self):
@@ -140,8 +143,8 @@ class Entity():
     def set_origindisp(self, vec):
         self.__origindisp = vec
         absorigin = self.get_absorigin()
-        self._rect.left = absorigin.x
-        self._rect.top = -absorigin.y
+        self._absrect.left = absorigin.x
+        self._absrect.top = -absorigin.y
 
     # Get the base velocity of this entity.
     def get_basevelocity(self):
@@ -158,22 +161,22 @@ class Entity():
     # Set the hitbox of this entity.
     def set_hitbox(self, vec):
         self.__hitbox = vec
-        self._rect.w = vec.x
-        self._rect.h = vec.y
+        self._absrect.w = self._baserect.w = vec.x
+        self._absrect.h = self._baserect.h = vec.y
     
     # Check if this entity collides with another entity on the x axis.
     def collides_x(self, other):
-        return (self._rect.left < other._rect.right 
-                and self._rect.right > other._rect.left)
+        return (self._baserect.left < other._baserect.right 
+                and self._baserect.right > other._baserect.left)
     
     # Check if this entity collides with another entity on the y axis.
     def collides_y(self, other):
-        return (self._rect.top < other._rect.bottom
-                and self._rect.bottom > other._rect.top)
+        return (self._baserect.top < other._baserect.bottom
+                and self._baserect.bottom > other._baserect.top)
     
     # Check if this entity collides with another entity (AABB).
     def collides(self, other):
-        return self._rect.colliderect(other._rect)
+        return self._baserect.colliderect(other._baserect)
 
     # Retrieve an event from this entity.
     def get_event(self, name):

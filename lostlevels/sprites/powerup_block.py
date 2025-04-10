@@ -22,10 +22,12 @@ class PowerupBlock(engine.entity.Sprite):
         self.origin_y = None
         self.level = None
         self.decoy = False
+        self.released = False
         self.biome = ""
 
-        # Create an event that is called when the power-up block is hit.
-        self.set_event(engine.Event("release", PowerupBlock.release))
+        # Create new events that are called when the power-up block is hit.
+        self.set_event(engine.Event("release", PowerupBlock.release))    # Called immediately after being hit.
+        self.set_event(engine.Event("release_fixed", lambda self: None)) # Called when the block gets fixed.
 
     # Set the index of this power-up block.
     def activated(self):
@@ -67,6 +69,21 @@ class PowerupBlock(engine.entity.Sprite):
         
         # If this entity has not been unanchored, move it now.
         if self.origin_y == None:
+            # First, check for whether there actually is space to move.
+            origin = self.get_baseorigin()
+            query = self._engine.query_entities(
+                origin, origin + pygame.math.Vector2(32, 1), False)
+            if len(query) > 0:
+                # Don't sent the power-up block upwards. If the block
+                # is meant to free-fall, release it anyway. Otherwise,
+                # call the release_fixed event and exit.
+                if self.fall:
+                    self.movetype = engine.entity.MOVETYPE_PHYSICS
+                else:
+                    self.invoke_event("release_fixed")
+                return engine.Event.DETOUR_CONTINUE
+
+            # Release the power-up block.
             self.movetype = engine.entity.MOVETYPE_PHYSICS
             self.velocity.y = 200
             self.origin_y = self.get_baseorigin().y
@@ -76,23 +93,32 @@ class PowerupBlock(engine.entity.Sprite):
     
     # Reset this block upon being hit and call the release event.
     def hit(self, other, coltype, coldir):
-        # If the other entity is not the player, continue.
-        if other != self.level.player:
-            return
+        # Check if this entity has not been hit already.
+        if not self.hit:
+            # If the other entity is not the player, continue.
+            if other != self.level.player:
+                return
 
-        # If this entity was not from below, continue.
-        if coldir != engine.entity.COLDIR_DOWN:
-            return
+            # If this entity was not from below, continue.
+            if coldir != engine.entity.COLDIR_DOWN:
+                return
+            
+            # Reset this block and call the release event.
+            self.index = 4
+            self.hit = True
+            self.draw = True
+            self.invoke_event("release")
 
-        # If this entity has already been hit, continue.
-        if self.hit:
-            return
-        
-        # Reset this block and call the release event.
-        self.index = 4
-        self.hit = True
-        self.draw = True
-        self.invoke_event("release")
+        # Otherwise, check if it hasn't released a power-up when in free-fall.
+        elif not self.released and self.fall:
+            # If it didn't collide with an entity below, continue.
+            if not ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_UP)
+                    or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_DOWN)):
+                return
+            
+            # Release the power-up after fixing itself.
+            self.invoke_event("release_fixed")
+            self.released = True
 
     # Release a coin from this block by default:
     def release(self):
@@ -111,3 +137,5 @@ class PowerupBlock(engine.entity.Sprite):
             and origin.y < self.origin_y):
             self.movetype = engine.entity.MOVETYPE_ANCHORED
             self.set_baseorigin(pygame.math.Vector2(origin.x, self.origin_y))
+            self.invoke_event("release_fixed")
+            self.released = True

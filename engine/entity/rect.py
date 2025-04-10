@@ -18,4 +18,4 @@ class Rectangle(entity.Entity):
 
 # Draw this rectangle.
 def draw_rectangle(self, screen):
-    pygame.draw.rect(screen, self.colour, self._rect)
+    pygame.draw.rect(screen, self.colour, self._absrect)

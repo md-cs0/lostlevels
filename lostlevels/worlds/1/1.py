@@ -65,14 +65,13 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(4960, -416), 80, 2)
 
         # Create the power-up blocks.
-        gen.generate_powerup_block(pygame.math.Vector2(32, -288))
-        gen.generate_powerup_block(pygame.math.Vector2(32, -320))
         gen.generate_powerup_block(pygame.math.Vector2(512, -288))
         gen.generate_powerup_block(pygame.math.Vector2(672, -288), fall = True)
         gen.generate_powerup_block(pygame.math.Vector2(672, -320), draw = False)
         gen.generate_powerup_block(pygame.math.Vector2(736, -288))
         gen.generate_powerup_block(pygame.math.Vector2(704, -160))
-        gen.generate_powerup_block(pygame.math.Vector2(2048, -256), draw = False)
+        hidden = gen.generate_powerup_block(pygame.math.Vector2(2048, -256), draw = False)
+        gen.insert_powerup(hidden[0], "glitch_powerup")
         gen.generate_powerup_block(pygame.math.Vector2(2496, -288))
         gen.generate_powerup_block(pygame.math.Vector2(3008, -160))
         gen.generate_powerup_block(pygame.math.Vector2(3008, -288), decoy = True)

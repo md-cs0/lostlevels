@@ -62,6 +62,9 @@ class LostLevels(engine.Game):
         self._engine.register_classname("powerup_block", sprites.PowerupBlock)
         self._engine.register_classname("coin", sprites.Coin)
         self._engine.register_classname("pipetop", sprites.PipeTop)
+        self._engine.register_classname("moveable", sprites.Moveable)
+        self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
+        self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
 
         # Declare all the status bar's elements.
         self.scorebox = None
