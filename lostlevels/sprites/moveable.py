@@ -37,3 +37,8 @@ class Moveable(engine.entity.Sprite):
             or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_RIGHT)
             and not self.negate_speed):
             self.negate_speed = not self.negate_speed
+
+        # If the other entity is a moveable, set its negate_speed attribute to
+        # be the opposite of this moveable's negate_speed.
+        if isinstance(other, Moveable):
+            other.negate_speed = not self.negate_speed

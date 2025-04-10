@@ -19,7 +19,7 @@ class EnemyBase(Moveable):
     # Handle collision with the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not a player, continue.
-        if other.get_class() != "player": # DOCUMENT #
+        if other.get_class() != "player":
             return engine.Event.DETOUR_CONTINUE
         
         # If this enemy hit the player on the side, hurt the player.
@@ -31,7 +31,7 @@ class EnemyBase(Moveable):
         if ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_DOWN)
             or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_UP)):
             other.add_velocity_y = 400
-            other.jump_multiplier = 1.1
+            other.jump_multiplier = 1.2
             self.invoke_event("player_hit", other)
             return engine.Event.DETOUR_CONTINUE
 

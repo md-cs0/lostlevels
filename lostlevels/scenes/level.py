@@ -5,6 +5,8 @@ import pygame
 import engine
 import time
 
+from ..sprites import Moveable
+
 # Level scene.
 class Level(engine.Game):
     # Construct the level map.
@@ -133,7 +135,8 @@ class Level(engine.Game):
                 continue
 
             # If this entity is not active, check if it should be activated.
-            if not ent.active and ent.get_baseorigin().x - self.camoffset < 576:
+            if (not ent.active and 
+                ent.get_baseorigin().x - self.camoffset < (864 if not isinstance(ent, Moveable) else 576)):
                 self._engine.activate_entity(ent)
 
             # Check if the entity is active.
