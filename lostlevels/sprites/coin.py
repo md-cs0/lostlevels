@@ -35,12 +35,10 @@ class Coin(engine.entity.Sprite):
 
     # Handle collision with other entities.
     def collision(self, other, coltype, coldir):
-        # If we collided with the player, increment the coins counter.
-        if other == self.level.player:
+        # If we collided with the player, increment the coins counter
+        # and delete the coin.
+        if other.get_class() == "player":
             self.increment_counter()
-
-        # If we hit the player, delete the coin.
-        if other == self.level.player:
             self._engine.delete_entity(self)
 
         # Return false in all cases to prevent collision resolution.

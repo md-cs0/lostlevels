@@ -47,7 +47,7 @@ class PipeTop(engine.entity.Tile):
             return
         
         # Confirm whether the other entity is the player.
-        if other != self.level.player:
+        if other.get_class() != "player":
             return
         
         # Confirm whether the player has actually attempted to walk into this pipe.

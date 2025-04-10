@@ -49,6 +49,10 @@ class Player(engine.entity.Sprite):
         self.block_hit_sound.volume = 1
         self.jump_sound.volume = 1
 
+        # Used for propelling off enemy targets.
+        self.add_velocity_y = 0
+        self.jump_multiplier = 1
+
     # Handle player movement per-frame.
     def per_frame(self):
         # Return if this player can't move.
@@ -80,13 +84,17 @@ class Player(engine.entity.Sprite):
             # and how fast they're moving.
             multiplier = max(min(abs(self.__speedwhenjumping), 150) / 125, 1)
             if self.__jumping + 0.3 > time.perf_counter():
-                self.velocity.y = 350 * multiplier
+                self.velocity.y = 350 * multiplier * self.jump_multiplier
         else:
             self.__jumping = -1
 
         # Handle crouching upon pressing the downwards arrow key and set the
         # player's hitbox size.
         if self.groundentity:
+            # Reset the jump multiplier.
+            if self.add_velocity_y == 0:
+                self.jump_multiplier = 1
+
             # Set the crouching state.
             if keys[pygame.K_DOWN]:
                 if not self.__crouching:
@@ -121,6 +129,11 @@ class Player(engine.entity.Sprite):
                     self.index = 0
             else:
                 self.index = 4
+
+        # Add the player's add velocity to the actual velocity.
+        if self.add_velocity_y != 0:
+            self.velocity.y = self.add_velocity_y
+            self.add_velocity_y = 0
 
     # Override the player's collision.
     def collision(self, other, coltype, coldir):
@@ -172,7 +185,7 @@ class Player(engine.entity.Sprite):
         else:
             self.denied_sound.repeat()
 
-    # Kill this player.
+    # Kill this player. This method should not be called.
     def kill(self):
         # Invalidate the player's alive status.
         self.alive = False
@@ -186,3 +199,9 @@ class Player(engine.entity.Sprite):
         # Log the player's death and play the death sound.
         self.death_sound.play()
         self._engine.console.log("[Lost Levels]: the player has died!")
+
+    # Hurt this player. This method should be used instead for downgrading the player or
+    # killing the player outright. For always killing the player, see Level::death().
+    def hurt(self):
+        # For now, this will just kill the player in all circumstances.
+        self.level.death()

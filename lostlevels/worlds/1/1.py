@@ -184,13 +184,23 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_cloud(pygame.math.Vector2(5792, -96), 3)
         gen.generate_cloud(pygame.math.Vector2(6432, -128))
 
-        # Test.
-        """
-        test_powerup = eng.create_entity_by_class("glitch_powerup")
-        test_powerup.speed = 75
-        test_powerup.level = level
-        test_powerup.set_baseorigin(pygame.math.Vector2(512, -288))
-        """
+        # Create the Goombas.
+        gen.generate_goomba(pygame.math.Vector2(704, -390))
+        gen.generate_goomba(pygame.math.Vector2(1280, -390))
+        gen.generate_goomba(pygame.math.Vector2(1632, -390))
+        gen.generate_goomba(pygame.math.Vector2(1680, -390))
+        gen.generate_goomba(pygame.math.Vector2(2560, -134))
+        gen.generate_goomba(pygame.math.Vector2(2624, -134))
+        gen.generate_goomba(pygame.math.Vector2(3104, -390))
+        gen.generate_goomba(pygame.math.Vector2(3152, -390))
+        gen.generate_goomba(pygame.math.Vector2(3648, -390))
+        gen.generate_goomba(pygame.math.Vector2(3696, -390))
+        gen.generate_goomba(pygame.math.Vector2(3968, -390))
+        gen.generate_goomba(pygame.math.Vector2(4016, -390))
+        gen.generate_goomba(pygame.math.Vector2(4096, -390))
+        gen.generate_goomba(pygame.math.Vector2(4144, -390))
+        gen.generate_goomba(pygame.math.Vector2(5568, -390))
+        gen.generate_goomba(pygame.math.Vector2(5616, -390))
 
         # Return the level data generated for this section.
         return data

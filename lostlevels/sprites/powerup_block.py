@@ -2,6 +2,7 @@
 
 import pygame
 import engine
+import lostlevels.sprites
 
 # The power-up block class.
 class PowerupBlock(engine.entity.Sprite):
@@ -50,13 +51,13 @@ class PowerupBlock(engine.entity.Sprite):
             return True
         
         # Otherwise, only return true if this is a player hitting from below.
-        return (coldir == engine.entity.COLDIR_DOWN and other == self.level.player
+        return (coldir == engine.entity.COLDIR_DOWN and other.get_class() == "player"
                 and other.get_baseorigin().y < self.get_baseorigin().y)
 
     # Unanchor the power-up block briefly to move it slightly.
     def unanchor(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not the player, continue.
-        if other != self.level.player:
+        if other.get_class() != "player":
             return engine.Event.DETOUR_CONTINUE
 
         # If this entity was not hit from below, continue.
@@ -73,7 +74,22 @@ class PowerupBlock(engine.entity.Sprite):
             origin = self.get_baseorigin()
             query = self._engine.query_entities(
                 origin, origin + pygame.math.Vector2(32, 1), False)
-            if len(query) > 0:
+            for ent in query:
+                # If this entity is the power-up block itself, continue.
+                if ent == self:
+                    continue
+
+                # Skip invisible entities as well.
+                if not ent.draw:
+                    continue
+
+                # If this is an enemy target, kill it and continue.
+                # Before you wonder: yes, it is intentional that destructible
+                # blocks do not kill enemies.
+                if isinstance(ent, lostlevels.sprites.enemies.EnemyBase):
+                    ent.invoke_event("kill")
+                    continue
+
                 # Don't sent the power-up block upwards. If the block
                 # is meant to free-fall, release it anyway. Otherwise,
                 # call the release_fixed event and exit.
@@ -96,7 +112,7 @@ class PowerupBlock(engine.entity.Sprite):
         # Check if this entity has not been hit already.
         if not self.hit:
             # If the other entity is not the player, continue.
-            if other != self.level.player:
+            if other.get_class() != "player":
                 return
 
             # If this entity was not from below, continue.

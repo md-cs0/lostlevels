@@ -543,7 +543,7 @@ class LLEngine():
         # physics engine, and check whether they overlap with the given
         # rectangle, and return it.
         entities = self.__physics.query_entities(start, end, include_nocollide)
-        entities[:] = [ent for ent in entities if hitbox.colliderect(ent._baserect)] # NEW CODE #
+        entities[:] = [ent for ent in entities if hitbox.colliderect(ent._baserect)]
         return entities
     
     # Get the number of entities that currently exist.

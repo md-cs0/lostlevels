@@ -298,6 +298,7 @@ class LevelGenerator():
         
         # Create a function for hooking the power-up block's release_fixed event too.
         def release_fixed(self_block):
+            # Release the power-up.
             powerup = self_block._engine.create_entity_by_class(classname, self_block)
             if isinstance(powerup, lostlevels.sprites.Moveable):
                 powerup.speed = speed
@@ -305,9 +306,21 @@ class LevelGenerator():
             powerup.level = self.__level
             powerup._engine.console.log(f"[Lost Levels]: player released power-up \"{classname}\"")
 
+            # Play a sound to indicate that the power-up has been released.
+            sound = self_block._engine.create_sound("lostlevels/assets/audio/objects/powerup_release.ogg")
+            sound.volume = 1
+            sound.play()
+
         # Configure the power-up block's events.
         block.get_event("release" if fixed else "release_fixed").set_func(lambda self: None)
         block.get_event("release_fixed" if fixed else "release").set_func(release_fixed)
+
+    # Generate a Goomba.
+    def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
+        ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked)
+        for ent in ents:
+            ent.negate_speed = negate_speed
+        return ents
     
     # Internal code for generating an array of tiles.
     def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False):

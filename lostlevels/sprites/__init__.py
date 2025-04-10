@@ -4,3 +4,4 @@ from .coin import Coin
 from .moveable import Moveable
 from .pipe_top import *
 from . import powerups 
+from . import enemies

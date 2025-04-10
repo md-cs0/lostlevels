@@ -41,7 +41,7 @@ class MushroomBase(Moveable):
     # Handle acquiring the power-up by the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not the player, continue.
-        if other != self.level.player:
+        if other.get_class() != "player":
             return engine.Event.DETOUR_CONTINUE
         
         # If this entity is not manipulated by the physics engine, continue.
@@ -49,6 +49,6 @@ class MushroomBase(Moveable):
             return engine.Event.DETOUR_CONTINUE
         
         # Invoke the pickup event and delete this entity.
-        self.invoke_event("pickup", self.level.player)
+        self.invoke_event("pickup", other)
         self._engine.delete_entity(self)
         return (engine.Event.DETOUR_SUPERSEDE, False)
