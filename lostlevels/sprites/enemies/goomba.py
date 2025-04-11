@@ -8,9 +8,9 @@ from . import EnemyBase
 class Goomba(EnemyBase):
     # Construct a new Goomba.
     def __init__(self, eng, classname):
-        # Call the moveable constructor and modify its default properties.
+        # Call the enemy base constructor and modify its default properties.
         super().__init__(eng, classname)
         self.speed = 60
         
-        # Load the glitch power-up spritesheet.
+        # Load the Goomba power-up spritesheet.
         self.load("lostlevels/assets/sprites/goomba.png", (32, 26), 1)

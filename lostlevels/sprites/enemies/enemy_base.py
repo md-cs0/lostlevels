@@ -14,7 +14,13 @@ class EnemyBase(Moveable):
 
         # Create new events for hitting the enemy from above and killing the enemy.
         self.set_event(engine.Event("player_hit", EnemyBase.player_hit)) # Called when player hits from above.
-        self.set_event(engine.Event("kill", lambda self: self._engine.delete_entity(self)))
+        self.set_event(engine.Event("kill", EnemyBase.kill))
+
+        # Create some sound effects.
+        self.kick = self._engine.create_sound("lostlevels/assets/audio/player/koopa_kick.ogg")
+        self.stomp = self._engine.create_sound("lostlevels/assets/audio/player/enemy_stomp.ogg")
+        self.kick.volume = 1
+        self.stomp.volume = 1
 
     # Handle collision with the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
@@ -40,4 +46,11 @@ class EnemyBase(Moveable):
     
     # Handle being hit by the player from above.
     def player_hit(self, player):
-        self.invoke_event("kill")
+        self.stomp.play()
+        self.invoke_event("kill", True)
+
+    # Handle killing this enemy.
+    def kill(self, player_hit = False):
+        if not player_hit:
+            self.kick.repeat()
+        self._engine.delete_entity(self)

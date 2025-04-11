@@ -56,12 +56,8 @@ class PowerupBlock(engine.entity.Sprite):
 
     # Unanchor the power-up block briefly to move it slightly.
     def unanchor(self, name, returnValue, other, coltype, coldir):
-        # If the other entity is not the player, continue.
-        if other.get_class() != "player":
-            return engine.Event.DETOUR_CONTINUE
-
-        # If this entity was not hit from below, continue.
-        if coldir != engine.entity.COLDIR_DOWN:
+        # Check if this power-up block should be triggered.
+        if not self.__should_trigger(other, coltype, coldir):
             return engine.Event.DETOUR_CONTINUE
         
         # If this entity has already been hit, continue.
@@ -111,12 +107,8 @@ class PowerupBlock(engine.entity.Sprite):
     def hit(self, other, coltype, coldir):
         # Check if this entity has not been hit already.
         if not self.hit:
-            # If the other entity is not the player, continue.
-            if other.get_class() != "player":
-                return
-
-            # If this entity was not from below, continue.
-            if coldir != engine.entity.COLDIR_DOWN:
+            # Check if this power-up block should be triggered.
+            if not self.__should_trigger(other, coltype, coldir):
                 return
             
             # Reset this block and call the release event.
@@ -155,3 +147,17 @@ class PowerupBlock(engine.entity.Sprite):
             self.set_baseorigin(pygame.math.Vector2(origin.x, self.origin_y))
             self.invoke_event("release_fixed")
             self.released = True
+
+    # Should this power-up block be triggered?
+    def __should_trigger(self, other, coltype, coldir):
+        # Check if this is a player hitting from underneath.
+        if other.get_class() == "player" and coldir == engine.entity.COLDIR_DOWN:
+            return True
+        
+        # Check if this is a Koopa hitting from the side.
+        if (other.get_class() == "koopa" and other.kicked and
+            (coldir == engine.entity.COLDIR_LEFT or coldir == engine.entity.COLDIR_RIGHT)):
+            return True
+        
+        # Otherwise, return false.
+        return False

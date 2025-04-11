@@ -322,6 +322,13 @@ class LevelGenerator():
             ent.negate_speed = negate_speed
         return ents
     
+    # Generate a Koopa.
+    def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
+        ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked)
+        for ent in ents:
+            ent.negate_speed = negate_speed
+        return ents
+
     # Internal code for generating an array of tiles.
     def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False):
         ents = []
@@ -365,8 +372,11 @@ class LevelGenerator():
     
     # Destroy a destructible block.
     def __destroy_block(self, ent, other, coltype, coldir):
-        # If the player has hit this block from below, destroy it!
-        if other == self.__level.player and coldir == engine.entity.COLDIR_DOWN:
+        # If the player has hit this block from below, or a Koopa has hit the block
+        # from the side, destroy it!
+        if ((other == self.__level.player and coldir == engine.entity.COLDIR_DOWN)
+            or (other.get_class() == "koopa" and other.kicked and
+                (coldir == engine.entity.COLDIR_LEFT or coldir == engine.entity.COLDIR_RIGHT))):
             # Delete the entity.
             self.__engine.delete_entity(ent)
 

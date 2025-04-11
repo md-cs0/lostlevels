@@ -202,6 +202,9 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_goomba(pygame.math.Vector2(5568, -390))
         gen.generate_goomba(pygame.math.Vector2(5616, -390))
 
+        # Create the Koopa.
+        gen.generate_koopa(pygame.math.Vector2(3424, -368))
+
         # Return the level data generated for this section.
         return data
     
