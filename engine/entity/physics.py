@@ -111,8 +111,12 @@ class SpatialHashGrid():
     # either being updated or it is being deleted.
     def remove(self, entity):
         # Loop through each grid node for this entity and update the linked list.
+        invalid_hash_count = 0
         for hash in entity.gridhashes:
             # Get the grid node for this hash.
+            if hash not in self.cells:
+                invalid_hash_count += 1
+                continue
             node = entity.gridhashes[hash]
 
             # Update the grid node's linked list.
@@ -127,6 +131,11 @@ class SpatialHashGrid():
             
             # Delete the node.
             del node
+
+        # If any invalid hashes were found, write a warning to the console logfile.
+        if invalid_hash_count > 0:
+            entity._engine.console.warn(f"[Lost Levels]: entity {id(entity)} had {invalid_hash_count}" \
+                                       f" invalid grid hash entries out of {len(entity.gridhashes)}")
 
         # Nullify the entity's grid hashes dictionary.
         entity.gridhashes = None

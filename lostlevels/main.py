@@ -33,9 +33,10 @@ class LostLevels(engine.Game):
         self.save = None
 
         # Create a 1Hz 1s 4square wave.
-        samples = (numpy.arange(engine.Sound.cached_sample_rate * 2) * numpy.pi 
-                   / engine.Sound.cached_sample_rate)
-        square = numpy.array([0] * engine.Sound.cached_sample_rate * 2).astype(numpy.int16)
+        samples = (numpy.arange(engine.Sound.cached_sample_rate * engine.Sound.num_channels) 
+                   * numpy.pi / engine.Sound.cached_sample_rate)
+        square = numpy.array([0] * engine.Sound.cached_sample_rate 
+                             * engine.Sound.num_channels).astype(numpy.int16)
         for i in range(1, 21, 2):
             square += (numpy.sin(samples * i) / i * 10000).astype(numpy.int16)
 

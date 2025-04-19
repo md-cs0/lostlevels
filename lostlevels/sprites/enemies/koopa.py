@@ -15,7 +15,7 @@ class Koopa(EnemyBase):
         self.get_event("player_hit").set_func(Koopa.player_hit)
         self.get_event("collision").set_func(Koopa.collision)
         self.get_event("collisionfinal").hook(Koopa.collisionfinal)
-        self.get_event("collisionfinal").remove_hook(Koopa.player_collide)
+        self.get_event("collisionfinal").remove_hook(EnemyBase.player_collide)
         self.speed = 60
         
         # Load the Koopa power-up spritesheet.
@@ -40,6 +40,7 @@ class Koopa(EnemyBase):
     def player_hit(self, player):
         # If this Koopa has not been stomped, stomp it into its shell.
         if not self.stomped:
+            self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was stomped into shell")
             self.index = 2
             self.speed = 0
             self.set_hitbox(pygame.math.Vector2(25, 24))
@@ -49,6 +50,7 @@ class Koopa(EnemyBase):
 
         # Otherwise, this Koopa is probably being kicked. Stop it from moving.
         elif self.kicked:
+            self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was kicked")
             self.kicked = False
             self.speed = 0
             self.stomp.play()

@@ -51,6 +51,7 @@ class EnemyBase(Moveable):
 
     # Handle killing this enemy.
     def kill(self, player_hit = False):
+        self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was killed")
         if not player_hit:
             self.kick.repeat()
         self._engine.delete_entity(self)
