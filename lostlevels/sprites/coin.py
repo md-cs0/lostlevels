@@ -33,6 +33,9 @@ class Coin(engine.entity.Sprite):
         self.collected = True
         self.coin_hit_sound.play()
 
+        # Increment the score counter by 200.
+        self.level.get_save().header.m_uScore += 200
+
     # Handle collision with other entities.
     def collision(self, other, coltype, coldir):
         # If we collided with the player, increment the coins counter

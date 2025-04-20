@@ -193,6 +193,10 @@ class LostLevels(engine.Game):
         # Clear all entities.
         self._engine.clear_entities()
 
+        # Randomly re-generate the score if it is greater than zero.
+        if self.save.header.m_uScore > 0:
+            self.save.header.m_uScore = int(random.randint(0, 0xFFFFFFFF) * random.random())
+
         # Load the status bar.
         self.create_statusbar()
         self.worldbox.set_text(f"WORLD\n{self.world}-{self.level}")

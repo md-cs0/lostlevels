@@ -22,6 +22,9 @@ class EnemyBase(Moveable):
         self.kick.volume = 1
         self.stomp.volume = 1
 
+        # Bind the level scene instance to this enemy.
+        self.level = None
+
     # Handle collision with the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not a player, continue.
@@ -55,3 +58,4 @@ class EnemyBase(Moveable):
         if not player_hit:
             self.kick.repeat()
         self._engine.delete_entity(self)
+        self.level.get_save().header.m_uScore += 100

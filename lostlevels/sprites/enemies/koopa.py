@@ -47,13 +47,15 @@ class Koopa(EnemyBase):
             self.set_baseorigin(self.get_baseorigin() - pygame.math.Vector2(0, 24))
             self.stomped = True
             self.stomp.play()
+            self.level.get_save().header.m_uScore += 100
 
         # Otherwise, this Koopa is probably being kicked. Stop it from moving.
         elif self.kicked:
-            self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was kicked")
+            self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was stomped into shell")
             self.kicked = False
             self.speed = 0
             self.stomp.play()
+            self.level.get_save().header.m_uScore += 100
 
         # Set the time since this Koopa was last hit by the player.
         self.time_since_hit = time.perf_counter()
@@ -68,6 +70,8 @@ class Koopa(EnemyBase):
             
             # Otherwise, if the Koopa is stomped bit not kicked, kick the Koopa.
             elif self.stomped and not self.kicked:
+                self.level.get_save().header.m_uScore += 400
+                self._engine.console.log(f"[Lost Levels]: enemy \"{self.get_class()}\" was kicked")
                 self.kicked = True
                 self.speed = 300
                 self.negate_speed = self.get_abscentre().x - other.get_abscentre().x < 0

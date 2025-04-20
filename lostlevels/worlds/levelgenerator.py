@@ -319,6 +319,7 @@ class LevelGenerator():
     def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
         ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked)
         for ent in ents:
+            ent.level = self.__level
             ent.negate_speed = negate_speed
         return ents
     
@@ -326,6 +327,7 @@ class LevelGenerator():
     def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
         ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked)
         for ent in ents:
+            ent.level = self.__level
             ent.negate_speed = negate_speed
         return ents
 
@@ -384,6 +386,9 @@ class LevelGenerator():
             sfx = self.__engine.create_sound("lostlevels/assets/audio/objects/destructible_hit.ogg")
             sfx.volume = 1
             sfx.play()
+
+            # Increment the score counter by 50.
+            self.__level.get_save().header.m_uScore += 50
 
             # Create a bunch of debris.
             for i in range(0, 4):
