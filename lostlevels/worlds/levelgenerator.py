@@ -287,6 +287,39 @@ class LevelGenerator():
         # Return the tiles.
         return [tile1, tile2]
     
+    # Generate a Goomba.
+    def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
+        ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked)
+        for ent in ents:
+            ent.level = self.__level
+            ent.negate_speed = negate_speed
+        return ents
+    
+    # Generate a Koopa.
+    def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
+        ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked)
+        for ent in ents:
+            ent.level = self.__level
+            ent.negate_speed = negate_speed
+        return ents
+    
+    # Generate a flagpole.
+    def generate_flagpole(self, offset, draw = True, troll = False, has_flag = True):
+        # Create the flagpole itself
+        ent = self.__generate_sprites("flagpole", offset, draw = draw)
+        if troll:
+            ent[0].index = 1
+
+        # If desired, create a flag as well.
+        if has_flag:
+            ent.extend(self.__generate_sprites("sprite", offset + pygame.math.Vector2(
+                8, -12), draw = draw))
+            ent[1].load("lostlevels/assets/sprites/flag.png", (43, 29), 1)
+            ent[1].movetype = engine.entity.MOVETYPE_NONE
+
+        # Return the flagpole.
+        return ent
+    
     # Insert a power-up into a power-up block. Set fixed to false if
     # the power-up should be released immediately after hitting the power-up
     # block.
@@ -314,22 +347,6 @@ class LevelGenerator():
         # Configure the power-up block's events.
         block.get_event("release" if fixed else "release_fixed").set_func(lambda self: None)
         block.get_event("release_fixed" if fixed else "release").set_func(release_fixed)
-
-    # Generate a Goomba.
-    def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
-        ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked)
-        for ent in ents:
-            ent.level = self.__level
-            ent.negate_speed = negate_speed
-        return ents
-    
-    # Generate a Koopa.
-    def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
-        ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked)
-        for ent in ents:
-            ent.level = self.__level
-            ent.negate_speed = negate_speed
-        return ents
 
     # Internal code for generating an array of tiles.
     def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False):

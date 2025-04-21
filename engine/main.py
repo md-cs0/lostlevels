@@ -531,7 +531,7 @@ class LLEngine():
         # Nullify each entity's gridhashes array.
         ent = self.__entity_head
         while ent:
-            ent.gridhashes = []
+            ent.gridhashes = dict()
             ent = ent.next
 
         # Reset the physics engine and this engine's entity list.

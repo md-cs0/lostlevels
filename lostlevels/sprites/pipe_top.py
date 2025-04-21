@@ -14,7 +14,7 @@ import engine
 class PipeTop(engine.entity.Tile):
     # Construct a new pipe top.
     def __init__(self, eng, classname):
-        # Call the entity constructor and modify its default properties.
+        # Call the sprite constructor and modify its default properties.
         super().__init__(eng, classname)
         self.get_event("collisionfinal").set_func(PipeTop.collisionfinal)
 
@@ -60,6 +60,7 @@ class PipeTop(engine.entity.Tile):
         
         # Destroy the player entity and call the entered event,
         # while playing the pipe enter sound.
+        self.entered = True
         self.pipe_enter_sound.play()
         self.level.player.can_die = False
         self._engine.delete_entity(other)

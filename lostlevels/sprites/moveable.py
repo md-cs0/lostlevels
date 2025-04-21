@@ -7,7 +7,7 @@ import engine
 class Moveable(engine.entity.Sprite):
     # Construct a new moveable.
     def __init__(self, engine, classname):
-        # Call the entity constructor and modify its default properties.
+        # Call the sprite constructor and modify its default properties.
         super().__init__(engine, classname)
         self.get_event("per_frame").set_func(Moveable.per_frame)
         self.get_event("collisionfinal").set_func(Moveable.collisionfinal)

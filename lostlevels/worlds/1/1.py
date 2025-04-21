@@ -32,7 +32,7 @@ class Level11_main(levelgenerator.LevelData):
     # Manage the super secret zone.
     def per_frame(self):
         # Handle the "super secret zone".
-        if self._level.player.get_baseorigin().x > 6700:
+        if self._level.player.get_baseorigin().x > 6700 and not self._level.finished:
             # Enable the dialogue.
             self.secret.enabled = True
             
@@ -204,6 +204,9 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
 
         # Create the Koopa.
         gen.generate_koopa(pygame.math.Vector2(3424, -368))
+
+        # Create the flagpole.
+        gen.generate_flagpole(pygame.math.Vector2(6346, -106))
 
         # Return the level data generated for this section.
         return data

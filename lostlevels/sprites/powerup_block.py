@@ -8,7 +8,7 @@ import lostlevels.sprites
 class PowerupBlock(engine.entity.Sprite):
     # Construct a new power-up block.
     def __init__(self, eng, classname):
-        # Call the entity constructor and modify its default properties.
+        # Call the sprite constructor and modify its default properties.
         super().__init__(eng, classname)
         self.get_event("activated").set_func(PowerupBlock.activated)
         self.get_event("collision").set_func(PowerupBlock.collision)

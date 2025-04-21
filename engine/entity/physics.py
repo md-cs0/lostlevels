@@ -138,7 +138,7 @@ class SpatialHashGrid():
                                        f" invalid grid hash entries out of {len(entity.gridhashes)}")
 
         # Nullify the entity's grid hashes dictionary.
-        entity.gridhashes = None
+        entity.gridhashes = dict()
 
     # For a given set of start/end points forming a rectangle, return all the 
     # entities within the grid cells that are found within said rectangle.
@@ -436,8 +436,9 @@ class LLPhysics():
             # Basic collision resolution if this entity's being manipulated by the physics engine.
             origin = ent.get_baseorigin()
             ent.groundentity = None
-            if ent.movetype == entity.MOVETYPE_PHYSICS:
-                # Handle horizontal collision.
+
+            # Handle horizontal collision.
+            if ent.movetype > entity.MOVETYPE_ANCHORED:
                 if closest_x:
                     # Call the collisionfinal event on both entities.
                     coldir = COLDIR_LEFT if ent.velocity.x > 0 else COLDIR_RIGHT
@@ -445,11 +446,12 @@ class LLPhysics():
                     closest_x.invoke_event("collisionfinal", ent, COLTYPE_COLLIDED, coldir)
 
                     # Resolve this entity's velocity and origin.
-                    if coldir == COLDIR_LEFT:
-                        origin.x = closest_x.get_topleft().x - ent.get_hitbox().x
-                    else:
-                        origin.x = closest_x.get_topright().x
-                    ent.velocity.x = 0
+                    if ent.movetype == entity.MOVETYPE_PHYSICS:
+                        if coldir == COLDIR_LEFT:
+                            origin.x = closest_x.get_topleft().x - ent.get_hitbox().x
+                        else:
+                            origin.x = closest_x.get_topright().x
+                        ent.velocity.x = 0
 
                 # Handle vertical collision.
                 if closest_y:
@@ -459,12 +461,13 @@ class LLPhysics():
                     closest_y.invoke_event("collisionfinal", ent, COLTYPE_COLLIDED, coldir)
 
                     # Resolve this entity's velocity and origin.
-                    if coldir == COLDIR_DOWN:
-                        origin.y = closest_y.get_bottomleft().y
-                    else:
-                        origin.y = closest_y.get_topleft().y + ent.get_hitbox().y
-                        ent.groundentity = closest_y
-                    ent.velocity.y = 0
+                    if ent.movetype == entity.MOVETYPE_PHYSICS:
+                        if coldir == COLDIR_DOWN:
+                            origin.y = closest_y.get_bottomleft().y
+                        else:
+                            origin.y = closest_y.get_topleft().y + ent.get_hitbox().y
+                            ent.groundentity = closest_y
+                        ent.velocity.y = 0
 
             # Set the new origin of this entity and update it in the grid.
             ent.set_baseorigin(origin + ent.velocity * self.__engine.globals.frametime)

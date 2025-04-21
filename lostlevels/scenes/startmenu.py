@@ -166,6 +166,10 @@ class StartMenu(engine.Game):
         self.loadsave_help.set_colour(pygame.Color(255, 255, 255))
         self.loadsave_help.set_x_align(engine.ui.X_CENTRE)
 
+        # Create the saves directory if it doesn't currently exist.
+        if not os.path.isdir("saves"):
+            os.mkdir("saves")
+
     # Per-frame code.
     def per_frame(self):
         # If we are in the load save page, scroll buttons based on the selector's

@@ -55,7 +55,7 @@ class Entity():
         self.deleted = False # Set to True after this entity is unlinked.
 
         # Reference hashes for the scene grid.
-        self.gridhashes = None
+        self.gridhashes = dict()
         self.drawgrid = False
 
     # Get the class name of this entity.

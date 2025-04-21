@@ -9,7 +9,7 @@ import time
 class Player(engine.entity.Sprite):
     # Construct a new player.
     def __init__(self, engine, classname):
-        # Call the entity constructor and modify its default properties.
+        # Call the sprite constructor and modify its default properties.
         super().__init__(engine, classname)
         self.get_event("per_frame").set_func(Player.per_frame)
         self.get_event("collision").set_func(Player.collision)
@@ -17,7 +17,7 @@ class Player(engine.entity.Sprite):
         self.acceleration = 6.5
 
         # Load the player spritesheet.
-        self.load("lostlevels/assets/sprites/player_small.png", (24, 58), 10)
+        self.load("lostlevels/assets/sprites/player_small.png", (24, 58), 12)
 
         # Cache the status of the player jumping.
         self.__jumping = 0
@@ -32,6 +32,7 @@ class Player(engine.entity.Sprite):
         # Can this player actually move?
         self.moveable = True
         self.can_jump = True
+        self.always_animate = False # If Player::moveable is False, should the player still animate itself?
 
         # Main player status.
         self.alive = True
@@ -53,8 +54,62 @@ class Player(engine.entity.Sprite):
         self.add_velocity_y = 0
         self.jump_multiplier = 1
 
+        # Used for climbing the player.
+        self.climbing = False
+        self.climb_velocity = 0
+
     # Handle player movement per-frame.
     def per_frame(self):
+        # Override this function if the player is climbing.
+        if self.climbing:
+            # Correct the movetype so that the player can climb properly.
+            self.movetype = engine.entity.MOVETYPE_CUSTOM
+
+            # Force the player's y-velocity to its climb_velocity value and
+            # nullify the current x-velocity.
+            self.move = 0
+            self.velocity = pygame.math.Vector2(0, self.climb_velocity)
+
+            # Fix the player's horizontal origin to the entity being climbed.
+            self.set_baseorigin(pygame.math.Vector2(
+                self.climbing.get_baseorigin().x - self.get_hitbox().x, self.get_baseorigin().y))
+
+            # Handle the player's climbing animation.
+            self.flip() # Make sure the player is facing rightwards.
+            if time.perf_counter() > self.__animtimestamp + 0.085:
+                if self.index < 8:
+                    self.index = 8
+                else:
+                    self.index -= 8
+                    self.index = (self.index + 1) % 4 + 8
+                self.__animtimestamp = time.perf_counter()
+
+            # Return.
+            return
+        else:   
+            self.movetype = engine.entity.MOVETYPE_PHYSICS
+
+        # Should this player be animated automatically?
+        if self.always_animate or self.moveable:
+            # Flip the player sprite in the direction of travel.
+            if abs(self.velocity.x) > 0.1:
+                self.flip(self.velocity.x < 0)
+            
+            # Animate the player based on its current movement.
+            if self.__crouching:
+                self.index = 5
+            else:
+                if self.groundentity:
+                    if abs(self.velocity.x) > 0.1:
+                        length = 1 / (abs(self.velocity.x) / 20)
+                        if time.perf_counter() > self.__animtimestamp + length:
+                            self.__animtimestamp = time.perf_counter()
+                            self.index = (self.index % 3) + 1
+                    else:
+                        self.index = 0
+                else:
+                    self.index = 4
+
         # Return if this player can't move.
         if not self.moveable:
             return
@@ -110,25 +165,6 @@ class Player(engine.entity.Sprite):
             # Nullify any ground movment while crouching.
             if self.__crouching:
                 self.move = 0
-
-        # Flip the player sprite in the direction of travel.
-        if abs(self.velocity.x) > 0.1:
-            self.flip(self.velocity.x < 0)
-        
-        # Animate the player based on its current movement.
-        if self.__crouching:
-            self.index = 5
-        else:
-            if self.groundentity:
-                if abs(self.velocity.x) > 0.1:
-                    length = 1 / (abs(self.velocity.x) / 20)
-                    if time.perf_counter() > self.__animtimestamp + length:
-                        self.__animtimestamp = time.perf_counter()
-                        self.index = (self.index % 3) + 1
-                else:
-                    self.index = 0
-            else:
-                self.index = 4
 
         # Add the player's add velocity to the actual velocity.
         if self.add_velocity_y != 0:
@@ -205,3 +241,19 @@ class Player(engine.entity.Sprite):
     def hurt(self):
         # For now, this will just kill the player in all circumstances.
         self.level.death()
+
+    # Finish the level by having the player walk to the end while calling the level's
+    # Level::finish_level() method.
+    def finish_level(self):
+        # Have the finish_level() methods already been called?
+        if self.level.finished:
+            return
+        
+        # Have the player walk into the distance.
+        self.climbing = False
+        self.moveable = False
+        self.always_animate = True
+        self.move = 150 * 1.75
+
+        # Call the level's Level::finish_level() method.
+        self.level.finish_level()

@@ -17,4 +17,5 @@ This game was originally developed locally until I decided to instantiate a Git 
 - Nintendo GameCube for SFX
 - Half-Life for some SFX
 - Apple's Power Macintosh computers for some crash chimes
+- THX for their Deep Note
 - [Goatmeal for the NES style font](https://fontstruct.com/fontstructions/show/406653/nintendo_nes_font)

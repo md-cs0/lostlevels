@@ -64,6 +64,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("coin", sprites.Coin)
         self._engine.register_classname("pipetop", sprites.PipeTop)
         self._engine.register_classname("moveable", sprites.Moveable)
+        self._engine.register_classname("flagpole", sprites.FlagPole)
         self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
         self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
         self._engine.register_classname("enemy_base", sprites.enemies.EnemyBase)
@@ -170,6 +171,10 @@ class LostLevels(engine.Game):
 
     # Load a new world.
     def load_world(self, world):
+        # Randomly re-generate the score if it is greater than zero.
+        if self.save.header.m_uScore > 0:
+            self.save.header.m_uScore = int(random.randint(0, 0xFFFFFFFF) * random.random())
+
         # Clear all UI elements.
         self._engine.clear_background_elements()
         self._engine.clear_foreground_elements()
@@ -192,10 +197,6 @@ class LostLevels(engine.Game):
 
         # Clear all entities.
         self._engine.clear_entities()
-
-        # Randomly re-generate the score if it is greater than zero.
-        if self.save.header.m_uScore > 0:
-            self.save.header.m_uScore = int(random.randint(0, 0xFFFFFFFF) * random.random())
 
         # Load the status bar.
         self.create_statusbar()

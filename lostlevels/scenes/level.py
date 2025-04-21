@@ -5,6 +5,7 @@ import pygame
 import engine
 import time
 
+from .. import levelinfo
 from ..sprites import Moveable
 
 # Level scene.
@@ -24,6 +25,12 @@ class Level(engine.Game):
         # Declare the audio attributes in advance.
         self.audio_intro = None
         self.audio_main = None
+        self.finished_score = self._engine.create_sound(
+            "lostlevels/assets/audio/objects/flagpole_count.ogg")
+        self.finished_score.volume = 1
+
+        # Has the level concluded yet?
+        self.finished = False
 
         # Generate the world by calling the module's load_leveldata() function.
         self.max_scroll = -1
@@ -87,15 +94,18 @@ class Level(engine.Game):
 
     # Handle the game from behind the scenes, such as scrolling the map.
     def post_physics(self):
-        # If the player is entity has been deleted, initiate the death sequence.
-        if self.player.deleted and self.player.can_die:
-            self.death()
-
-        # Subtract from the time remaining.
-        if self._engine.physics_enabled:
-            self.time_remaining = max(self.time_remaining - self._engine.globals.frametime, 0)
-            if self.time_remaining == 0 and self.player.alive:
+        # Only handle triggering the death sequence if the game ran out of time or if the 
+        # player entity was destroyed if the level has been completed.
+        if not self.finished:
+            # If the player is entity has been deleted, initiate the death sequence.
+            if self.player.deleted and self.player.can_die:
                 self.death()
+
+            # Subtract from the time remaining.
+            if self._engine.physics_enabled:
+                self.time_remaining = max(self.time_remaining - self._engine.globals.frametime, 0)
+                if self.time_remaining == 0 and self.player.alive:
+                    self.death()
 
         # Set the camera offset based on the position of the player.
         player_centre = (576 / 2) - (24 / 2)
@@ -106,7 +116,13 @@ class Level(engine.Game):
                 self.camoffset = min(self.camoffset, self.max_scroll)
         
         # Scroll all the entities and the background.
-        self.scroll_map()
+        if not self.finished:
+            self.scroll_map()
+        else:
+            # If the player entity has scrolled out of the player's viewpoint, 
+            # delete it.
+            if self.player.get_absorigin().x > 576:
+                self._engine.delete_entity(self.player)
 
         # Handle playing the level music, if it exists.
         if (self.audio_main != None and (self.audio_intro == None or not self.audio_intro.playing())
@@ -135,9 +151,15 @@ class Level(engine.Game):
                 continue
 
             # If this entity is not active, check if it should be activated.
-            if (not ent.active and 
-                ent.get_baseorigin().x - self.camoffset < (864 if not isinstance(ent, Moveable) else 576)):
-                self._engine.activate_entity(ent)
+            if not ent.active:
+                # Check if this entity is not too far behind the player. If it is,
+                # it should be deleted immediately.
+                cam_offset = ent.get_baseorigin().x - self.camoffset
+                if cam_offset < (864 if not isinstance(ent, Moveable) else 576):
+                    if cam_offset - ent.get_hitbox().x < -576:
+                        self._engine.delete_entity(ent)
+                    else:
+                        self._engine.activate_entity(ent)
 
             # Check if the entity is active.
             if ent.active:
@@ -220,3 +242,42 @@ class Level(engine.Game):
 
         # Forward this event to the player.
         self.player.keydown(enum, unicode, focused)
+
+    # Handle the end of the map.
+    def finish_level(self):
+        # Has the level already just finished?
+        if self.finished:
+            return
+
+        # Stop the current music from playing and set the finished flag.
+        self.stop_music()
+        self.finished = True
+
+        # Create the THX Deep Note sound object and play it.
+        thx = self._engine.create_sound("lostlevels/assets/audio/objects/flagpole_victory.ogg")
+        thx.volume = 1
+        thx.play()
+
+        # Create a timer for transferring the remaining time into score points.
+        self.finished_score.play(True)
+        self._engine.create_timer(self.handle_timer_score, 1 / 30)
+
+        # Handle whether a new level should be started after this level or not.
+        if self.get_save().currentlevel[self.__game.world - 1] >= levelinfo.NUM_LEVELS:
+            self.get_save().currentlevel[self.__game.world - 1] = levelinfo.NUM_LEVELS + 1
+            self._engine.create_timer(self.__game.load_levelselection, 8)
+        else:
+            self.get_save().currentlevel[self.__game.world - 1] += 1
+            self._engine.create_timer(self.__game.load_world, 8, self.__game.world)
+
+    # Handle transferring the remaining time into score points.
+    def handle_timer_score(self):
+        # Transfer from time remaining into score points.
+        self.time_remaining = max(self.time_remaining - 2, 0)
+        self.get_save().header.m_uScore += 20
+
+        # Repeat this function call if there is still some time remaining.
+        if self.time_remaining > 0:
+            self._engine.create_timer(self.handle_timer_score, 1 / 30)
+        else:
+            self.finished_score.stop()

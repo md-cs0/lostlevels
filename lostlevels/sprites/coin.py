@@ -8,7 +8,7 @@ import engine
 class Coin(engine.entity.Sprite):
     # Construct a new coin.
     def __init__(self, eng, classname):
-        # Call the entity constructor and modify its default properties.
+        # Call the sprite constructor and modify its default properties.
         super().__init__(eng, classname)
         self.get_event("collision").set_func(Coin.collision)
         self.movetype = engine.entity.MOVETYPE_ANCHORED
