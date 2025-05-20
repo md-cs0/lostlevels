@@ -4,5 +4,6 @@ from .coin import Coin
 from .moveable import Moveable
 from .flagpole import FlagPole
 from .pipe_top import *
+from .game_flags import *
 from . import powerups 
 from . import enemies

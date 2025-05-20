@@ -190,7 +190,7 @@ class LostLevels(engine.Game):
         self.__scene = scenes.LoadingLevel(self._engine, self)
     
     # Load a section of the level.
-    def load_level(self, section = "main", offset = None, time_remaining = 200):
+    def load_level(self, section = "main", offset = None, time_remaining = 200, first_time = True):
         # Clear all UI elements.
         self._engine.clear_background_elements()
         self._engine.clear_foreground_elements()
@@ -207,7 +207,7 @@ class LostLevels(engine.Game):
         if self.__sceneindex == SCENE_LEVEL:
             self.__scene.stop_music()
         self.__sceneindex = SCENE_LEVEL
-        self.__scene = scenes.Level(self._engine, self, section, offset, time_remaining)
+        self.__scene = scenes.Level(self._engine, self, section, offset, time_remaining, first_time)
 
     # Create the status bar.
     def create_statusbar(self):

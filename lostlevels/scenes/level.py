@@ -11,7 +11,8 @@ from ..sprites import Moveable
 # Level scene.
 class Level(engine.Game):
     # Construct the level map.
-    def __init__(self, eng, game, section = "main", offset = None, time_remaining = 200):
+    def __init__(self, eng, game, section = "main", offset = None, time_remaining = 200, 
+                 first_time = False):
         # Initialize the game interface.
         super().__init__(eng)
         self.__game = game
@@ -64,7 +65,7 @@ class Level(engine.Game):
         self.scroll_map()
 
         # Create the level timer.
-        self.time_remaining = time_remaining
+        self.time_remaining = self.leveldata.time_limit if first_time else time_remaining
 
         # Create a buffer for the last 10 key inputs registered.
         self.last_keys = [None] * 10
@@ -86,7 +87,7 @@ class Level(engine.Game):
     
     # Load a new level section.
     def load_newlevel(self, section, offset, time_remaining):
-        self.__game.load_level(section, offset, time_remaining)
+        self.__game.load_level(section, offset, time_remaining, False)
         
     # Forward the per-frame event to the level data object.
     def per_frame(self):
@@ -280,4 +281,4 @@ class Level(engine.Game):
         if self.time_remaining > 0:
             self._engine.create_timer(self.handle_timer_score, 1 / 30)
         else:
-            self.finished_score.stop()
+            self.finished_score.stop() 

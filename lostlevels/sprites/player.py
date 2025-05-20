@@ -1,9 +1,10 @@
 """This is the Lost Levels player sprite, which can be controlled
 by the player."""
 
+import time
 import pygame
 import engine
-import time
+import lostlevels # NEW CODE #
 
 # The player class.
 class Player(engine.entity.Sprite):
@@ -130,7 +131,8 @@ class Player(engine.entity.Sprite):
         # Jump upon pressing X.
         if keys[pygame.K_x] and self.can_jump:
             # Set the timestamp where the player started jumping.
-            if self.groundentity and self.__jumping == -1:
+            if (self.groundentity and self.__jumping == -1 
+                and not (self.groundentity.game_flags & lostlevels.sprites.CANNOT_JUMP)):
                 self.__jumping = time.perf_counter()
                 self.__speedwhenjumping = abs(self.velocity.x)
                 self.jump_sound.repeat()

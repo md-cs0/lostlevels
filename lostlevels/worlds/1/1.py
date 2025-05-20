@@ -250,6 +250,9 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Return the level data generated for this section.
         return data
     
+    # Invalid section?
+    return None
+    
 # Internal function for the crashing computer.
 def panic(self):
     # Play the crash chime depicted in some Power Macintosh computers, such as the

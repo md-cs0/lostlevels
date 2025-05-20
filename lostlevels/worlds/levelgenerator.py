@@ -21,6 +21,9 @@ class LevelData():
         # Set the default player spawn position.
         self.player_offset = player_offset
 
+        # Set the default time limit for this level.
+        self.time_limit = 200
+
         # Create a dictionary of groups of entities.
         self.groups = dict()
 

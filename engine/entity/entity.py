@@ -41,6 +41,9 @@ class Entity():
         self.acceleration = 4.5                     # Acceleration multiplier.
         self.dirty = False                          # Has the origin of the entity changed?
 
+        # Entity flags.
+        self.game_flags = 0                         # These are game flags that are invisible to the engine.
+
         # Create a few crucial events.
         self.set_event(Event("draw", placeholder))
         self.set_event(Event("activated", lambda self: None))
@@ -145,14 +148,6 @@ class Entity():
         absorigin = self.get_absorigin()
         self._absrect.left = absorigin.x
         self._absrect.top = -absorigin.y
-
-    # Get the base velocity of this entity.
-    def get_basevelocity(self):
-        return self.__basevelocity
-    
-    # Set the base velocity of this entity.
-    def set_basevelocity(self, vec):
-        self.__basevelocity = vec
 
     # Get the hitbox of this entity.
     def get_hitbox(self):

@@ -19,3 +19,6 @@ This game was originally developed locally until I decided to instantiate a Git 
 - Apple's Power Macintosh computers for some crash chimes
 - THX for their Deep Note
 - [Goatmeal for the NES style font](https://fontstruct.com/fontstructions/show/406653/nintendo_nes_font)
+
+# Song credits
+- Santo & Johnny - Sleepwalk
