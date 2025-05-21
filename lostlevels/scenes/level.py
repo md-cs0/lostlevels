@@ -33,6 +33,10 @@ class Level(engine.Game):
         # Has the level concluded yet?
         self.finished = False
 
+        # Create the player entity before the rest of the map is generated.
+        self.player = self._engine.create_entity_by_class("player")
+        self.player.level = self
+        
         # Generate the world by calling the module's load_leveldata() function.
         self.max_scroll = -1
         self.leveldata = game.levelmodule.load_leveldata(self._engine, self, section)
@@ -40,10 +44,8 @@ class Level(engine.Game):
             self._engine.console.error(
                 f"[Lost Levels]: invalid section name \"{section}\" for world {game.world}-{game.level}!")
 
-        # Create the player entity at the given offset.
-        self.player = self._engine.create_entity_by_class("player")
+        # With the map finally generated, spawn the player at the given offest and activate it.
         self.player.set_baseorigin(offset if offset else self.leveldata.player_offset)
-        self.player.level = self
         self._engine.activate_entity(self.player)
 
         # Create a wall to prevent the player from walking out of the map.

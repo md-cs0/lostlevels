@@ -60,6 +60,11 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(0, -416), 15, 2)
         gen.generate_ground(pygame.math.Vector2(896, -416), 10, 2)
 
+        # Create the power-up blocks.
+        gen.generate_powerup_block(pygame.math.Vector2(960, -288), spiked = True)
+        rocket = gen.generate_powerup_block(pygame.math.Vector2(992, -288), fall = True)
+        gen.insert_powerup(rocket[0], "rocket_launcher")
+
         # Just after the initial platform, there should be a layer of ground
         # that immediately falls down the moment the player walks onto it.
         troll_ground = gen.generate_ground(pygame.math.Vector2(480, -416), 13, 2)
@@ -69,8 +74,11 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
                     sample_hooks.unanchor_on_collide(eng, troll_ground, hit, other, coltype, coldir))
             
         # Create two hidden power-up block just before the troll platform for the player to jump off.
-        powerup = gen.generate_powerup_block(pygame.math.Vector2(448, -256), draw = False)
-        powerup = gen.generate_powerup_block(pygame.math.Vector2(480, -96), draw = False)
+        gen.generate_powerup_block(pygame.math.Vector2(448, -256), draw = False)
+        gen.generate_powerup_block(pygame.math.Vector2(480, -96), draw = False)
+
+        # TEMP
+        gen.generate_ground(pygame.math.Vector2(1216, 0), 10, 15)
 
         return data
     

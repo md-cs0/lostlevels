@@ -31,7 +31,7 @@ class StartMenu(engine.Game):
         # Create the background, which will just be a blue sky,
         # for now.
         self.sky = self._engine.create_ui_element_by_class("frame", engine.ui.LAYER_BACKGROUND)
-        self.sky.colour = pygame.Color(135, 205, 255)
+        self.sky.set_colour(pygame.Color(135, 205, 255))
         self.sky.set_size(engine.ui.UDim2(1, 0, 1, 0))
         self.sky.enabled = True
 
@@ -154,7 +154,7 @@ class StartMenu(engine.Game):
         self.newsave_box_bar = self._engine.create_ui_element_by_class("frame")
         self.newsave_box_bar.set_size(engine.ui.UDim2(1, -100, 0, 2))
         self.newsave_box_bar.set_position(engine.ui.UDim2(0, 50, 0.5, 52))
-        self.newsave_box_bar.colour = pygame.Color(255, 255, 255)
+        self.newsave_box_bar.set_colour(pygame.Color(255, 255, 255))
 
         # Create a helper dialogue for the load save page.
         self.loadsave_help =  self._engine.create_ui_element_by_class("text")

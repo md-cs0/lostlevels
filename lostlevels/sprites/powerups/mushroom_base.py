@@ -12,7 +12,7 @@ class MushroomBase(Moveable):
         super().__init__(eng, classname)
         self.get_event("per_frame").hook(MushroomBase.eject)
         self.get_event("collision").hook(MushroomBase.player_collide)
-        self.get_event("activated").set_func(MushroomBase.activated)
+        self.get_event("activated").set_func(MushroomBase.activated) # If returns True, delete entity.
         self.movetype = engine.entity.MOVETYPE_CUSTOM
 
         # Cache the level object.
@@ -23,6 +23,13 @@ class MushroomBase(Moveable):
 
         # Create an attribute for the origin of this power-up when activated.
         self.__origin = None
+
+        # Has this power-up already been picked?
+        self.picked = False
+
+        # Cache the power-up sound.
+        self.powerup_sound = self._engine.create_sound("lostlevels/assets/audio/objects/powerup_hit.ogg")
+        self.powerup_sound.volume = 1
 
     # Initiate the ejection of this power-up.
     def activated(self):
@@ -44,11 +51,17 @@ class MushroomBase(Moveable):
         if other.get_class() != "player":
             return engine.Event.DETOUR_CONTINUE
         
+        # If this entity has already been picked, continue.
+        if self.picked:
+            return engine.Event.DETOUR_CONTINUE
+        
         # If this entity is not manipulated by the physics engine, continue.
         if self.movetype != engine.entity.MOVETYPE_PHYSICS:
             return engine.Event.DETOUR_CONTINUE
         
-        # Invoke the pickup event and delete this entity.
-        self.invoke_event("pickup", other)
-        self._engine.delete_entity(self)
+        # Invoke the pickup event and delete this entity if designated.
+        if self.invoke_event("pickup", other):
+            self._engine.delete_entity(self)
+        else:
+            self.picked = True
         return (engine.Event.DETOUR_SUPERSEDE, False)

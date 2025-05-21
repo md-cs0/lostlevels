@@ -37,3 +37,4 @@ class GlitchPowerup(MushroomBase):
         
         # Create an engine timer for shutting down the game in 2 seconds.
         self._engine.create_timer(lambda: sys.exit(1), 2)
+        return True

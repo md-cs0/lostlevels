@@ -112,7 +112,7 @@ class Entity():
         return pygame.math.Vector2(origin.x + self.__hitbox.x,
                                    origin.y - self.__hitbox.y)
     
-    # Get the centre absolute origin of this entity.
+    # Get the centre base origin of this entity.
     def get_centre(self):
         origin = self.get_baseorigin()
         return pygame.math.Vector2(origin.x + self.__hitbox.x / 2,

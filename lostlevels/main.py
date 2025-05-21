@@ -67,6 +67,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("flagpole", sprites.FlagPole)
         self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
         self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
+        self._engine.register_classname("rocket_launcher", sprites.powerups.RocketLauncher)
         self._engine.register_classname("enemy_base", sprites.enemies.EnemyBase)
         self._engine.register_classname("goomba", sprites.enemies.Goomba)
         self._engine.register_classname("koopa", sprites.enemies.Koopa)

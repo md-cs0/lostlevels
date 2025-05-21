@@ -4,7 +4,7 @@ by the player."""
 import time
 import pygame
 import engine
-import lostlevels # NEW CODE #
+import lostlevels
 
 # The player class.
 class Player(engine.entity.Sprite):
@@ -38,6 +38,7 @@ class Player(engine.entity.Sprite):
         # Main player status.
         self.alive = True
         self.can_die = True
+        self.weapon = None
 
         # The level scene object.
         self.level = None
@@ -195,8 +196,13 @@ class Player(engine.entity.Sprite):
             and self.level):
             self.level.death()
 
-    # Use an entity by utilizing the USE key.
+    # Used for utilizing entities.
     def keydown(self, enum, unicode, focused):
+        # If this is the Z key, fire a weapon if equipped and return.
+        if enum == pygame.K_z and self.weapon:
+            self.weapon.invoke_event("fire")
+            return
+
         # Check that this is the USE key.
         if not enum == pygame.K_e:
             return

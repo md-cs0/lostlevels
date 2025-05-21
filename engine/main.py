@@ -553,6 +553,18 @@ class LLEngine():
         entities[:] = [ent for ent in entities if hitbox.colliderect(ent._baserect)]
         return entities
     
+    # Return all entities that are found within a given radius, i.e. return all entities
+    # within a given circle.
+    def query_entities_in_radius(self, centre, radius, include_nocollide = True):
+        # Get a list of entities within the appropriate grid cells from the
+        # physics engine, and check whether they are within the given radius.
+        entities = self.__physics.query_entities(centre + pygame.math.Vector2(-radius, radius), 
+                                                 centre + pygame.math.Vector2(radius, -radius), 
+                                                 include_nocollide)
+        entities[:] = [ent for ent in entities 
+                       if ent.get_centre().distance_squared_to(centre) < radius ** 2]
+        return entities
+    
     # Get the number of entities that currently exist.
     def count_entities(self, active = True):
         ent = self.entity_head()

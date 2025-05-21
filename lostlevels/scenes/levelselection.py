@@ -84,7 +84,7 @@ class LevelSelection(engine.Game):
             sign = self._engine.create_ui_element_by_class("frame", engine.ui.LAYER_BACKGROUND)
             sign.set_size(engine.ui.UDim2(0, 100, 0, 20))
             sign.set_position(engine.ui.UDim2(0, 46 + i * 192, 0, 325))
-            sign.colour = pygame.Color(255, 255, 255)
+            sign.set_colour(pygame.Color(255, 255, 255))
             sign.enabled = True
 
             # Create the text on the sign itself.
