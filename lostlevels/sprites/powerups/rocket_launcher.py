@@ -1,6 +1,7 @@
 """A single-use rocket launcher that blows up half of the map, per approximate
 estimates derived from my own imagination."""
 
+import random
 import pygame
 import engine
 from . import MushroomBase
@@ -19,34 +20,52 @@ class RocketLauncher(MushroomBase):
         # Load the rocket launcher spritesheet.
         self.load("lostlevels/assets/sprites/rocket_launcher.png", (32, 14), 1)
 
-        # Has this rocket launcher been equipped by a player?
+        # Has this rocket launcher been equipped by a humanoid?
         self.equipped = False
 
     # Pick up the rocket launcher.
-    def pickup(self, player):
+    def pickup(self, other):
+        # Pick up the weapon.
         self.powerup_sound.play()
         self.movetype = engine.entity.MOVETYPE_NONE
-        self.equipped = player
-        player.weapon = self
+        self.equipped = other
+        other.weapon = self
+
+        # If the new owner of the weapon is an enemy target, configure it 
+        # for random launch.
+        if not other.get_class() == "player":
+            self.fire_random()
+
+        # Do not delete the entity.
         return False
 
-    # Move with the player if this rocket launcher has been equipped.
+    # Move with the owner if this rocket launcher has been equipped.
     def per_frame(self):
-        if self.equipped:
-            if abs(self.equipped.velocity.x) > 0.1:
-                self.negate_speed = self.equipped.velocity.x < 0
-                self.flip(self.negate_speed)
-            self.set_baseorigin(self.equipped.get_baseorigin()
-                + pygame.math.Vector2(-32 + self.equipped.get_hitbox().x if self.negate_speed else 0, 
-                                      (-1 if 1 <= self.equipped.index <= 2 else 0) - 20))
+        # If the rocket launcher doesn't have an owner, continue.
+        if not self.equipped:
+            return
+        
+        # If the owner is dead, destroy this entity and return.
+        if not self.equipped.alive:
+            self._engine.delete_entity(self)
+            return
+        
+        # Move and flip with the owner.
+        if abs(self.equipped.velocity.x) > 0.1:
+            self.negate_speed = self.equipped.velocity.x < 0
+            self.flip(self.negate_speed)
+        self.set_baseorigin(self.equipped.get_baseorigin()
+            + pygame.math.Vector2(-32 + self.equipped.get_hitbox().x if self.negate_speed else 0, 
+                                  (-1 if 1 <= self.equipped.index <= 2 else 0) 
+                                  - (20 if self.equipped.get_class() == "player" else 0)))
             
     # Fire a rocket out of the rocket launcher and delete the rocket launcher.
     def fire(self):
         # Create a rocket manually.
         rocket = self._engine.create_entity_by_class("sprite")
         rocket.load("lostlevels/assets/sprites/rocket.png", (9, 4), 1)
-        rocket.set_baseorigin((self.get_topleft() - pygame.math.Vector2(9, 0)) if self.negate_speed 
-                              else (self.get_topright()) - pygame.math.Vector2(0, 2))
+        rocket.set_baseorigin((self.get_topleft() + pygame.math.Vector2(-12, 0)) if self.negate_speed 
+                              else (self.get_topright()) + pygame.math.Vector2(3, -2))
         rocket.flip(self.negate_speed)
         rocket.velocity.x = -2000 if self.negate_speed else 2000
         rocket.get_event("collisionfinal").set_func(rocket_hit)
@@ -59,6 +78,16 @@ class RocketLauncher(MushroomBase):
         # Delete this rocket launcher.
         self.equipped.weapon = None
         self._engine.delete_entity(self)
+
+    # If an enemy is equipping the rocket launcher, invoke RocketLauncher::fire()
+    # randomly.
+    def fire_random(self):
+        if self.deleted:
+            return
+        if random.randint(1, 10) == 1:
+            self.fire()
+        else:
+            self._engine.create_timer(self.fire_random, 0.5)
         
 # Handle the rocket hitting other entities.
 def rocket_hit(self, other, coltype, coldir):

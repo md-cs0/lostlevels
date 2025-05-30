@@ -3,6 +3,7 @@
 import pygame
 import engine
 from .. import Moveable
+from .. import Humanoid
 
 # The mushroom base class.
 class MushroomBase(Moveable):
@@ -11,7 +12,7 @@ class MushroomBase(Moveable):
         # Call the moveable constructor and modify its default properties.
         super().__init__(eng, classname)
         self.get_event("per_frame").hook(MushroomBase.eject)
-        self.get_event("collision").hook(MushroomBase.player_collide)
+        self.get_event("collision").hook(MushroomBase.target_collide)
         self.get_event("activated").set_func(MushroomBase.activated) # If returns True, delete entity.
         self.movetype = engine.entity.MOVETYPE_CUSTOM
 
@@ -46,9 +47,9 @@ class MushroomBase(Moveable):
         return engine.Event.DETOUR_CONTINUE
 
     # Handle acquiring the power-up by the player.
-    def player_collide(self, name, returnValue, other, coltype, coldir):
-        # If the other entity is not the player, continue.
-        if other.get_class() != "player":
+    def target_collide(self, name, returnValue, other, coltype, coldir):
+        # If the other entity is not a humanoid, continue.
+        if not isinstance(other, Humanoid):
             return engine.Event.DETOUR_CONTINUE
         
         # If this entity has already been picked, continue.

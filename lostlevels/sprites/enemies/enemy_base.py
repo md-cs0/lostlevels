@@ -3,13 +3,15 @@
 import pygame
 import engine
 from .. import Moveable
+from .. import Humanoid
 
 # The enemy base class.
-class EnemyBase(Moveable):
+class EnemyBase(Moveable, Humanoid):
     # Construct a new enemy base.
     def __init__(self, eng, classname):
         # Call the moveable constructor and modify its default properties.
-        super().__init__(eng, classname)
+        Moveable.__init__(self, eng, classname)
+        Humanoid.__init__(self)
         self.get_event("collisionfinal").hook(EnemyBase.player_collide)
 
         # Create new events for hitting the enemy from above and killing the enemy.
@@ -59,3 +61,4 @@ class EnemyBase(Moveable):
             self.kick.repeat()
         self._engine.delete_entity(self)
         self.level.get_save().header.m_uScore += 100
+        self.alive = False

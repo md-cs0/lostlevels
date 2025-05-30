@@ -5,13 +5,15 @@ import time
 import pygame
 import engine
 import lostlevels
+from . import Humanoid
 
 # The player class.
-class Player(engine.entity.Sprite):
+class Player(engine.entity.Sprite, Humanoid):
     # Construct a new player.
-    def __init__(self, engine, classname):
+    def __init__(self, eng, classname):
         # Call the sprite constructor and modify its default properties.
-        super().__init__(engine, classname)
+        engine.entity.Sprite.__init__(self, eng, classname)
+        Humanoid.__init__(self)
         self.get_event("per_frame").set_func(Player.per_frame)
         self.get_event("collision").set_func(Player.collision)
         self.get_event("collisionfinal").set_func(Player.collisionfinal)
@@ -36,9 +38,7 @@ class Player(engine.entity.Sprite):
         self.always_animate = False # If Player::moveable is False, should the player still animate itself?
 
         # Main player status.
-        self.alive = True
         self.can_die = True
-        self.weapon = None
 
         # The level scene object.
         self.level = None

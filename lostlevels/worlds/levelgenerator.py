@@ -292,7 +292,8 @@ class LevelGenerator():
     
     # Generate a Goomba.
     def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
-        ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked)
+        ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked,
+                                       before_entity = self.__engine.entity_head())
         for ent in ents:
             ent.level = self.__level
             ent.negate_speed = negate_speed
@@ -300,7 +301,8 @@ class LevelGenerator():
     
     # Generate a Koopa.
     def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
-        ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked)
+        ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked,
+                                       before_entity = self.__engine.entity_head())
         for ent in ents:
             ent.level = self.__level
             ent.negate_speed = negate_speed
@@ -368,11 +370,12 @@ class LevelGenerator():
         return ents
     
     # Internal code for generating an array of sprites.
-    def __generate_sprites(self, classname, offset, length = 1, height = 1, draw = True, spiked = False):
+    def __generate_sprites(self, classname, offset, length = 1, height = 1, draw = True, spiked = False,
+                           before_entity = None):
         ents = []
         for y in range(0, height):
             for x in range(0, length):
-                ent = self.__engine.create_entity_by_class(classname)
+                ent = self.__engine.create_entity_by_class(classname, before_entity)
                 ent.set_baseorigin(offset + pygame.math.Vector2(x * 32, -y * 32))
                 ent.draw = draw
                 if spiked:

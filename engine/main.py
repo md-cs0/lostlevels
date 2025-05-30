@@ -386,6 +386,8 @@ class LLEngine():
             newEnt.prev = before.prev
             if newEnt.prev:
                 newEnt.prev.next = newEnt
+            else:
+                self.__entity_head = newEnt
             newEnt.next = before
             before.prev = newEnt
         else:

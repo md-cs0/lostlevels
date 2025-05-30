@@ -56,6 +56,12 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen = levelgenerator.LevelGenerator(eng, level, "desert")
         data = Level12_main(eng, level, pygame.math.Vector2(32, -358), "desert")
 
+        # Rocket power up block: upon releasing the rocket launcher, a Goomba
+        # should immediately fall from the sky.
+        def rocket_block_goomba(self, name, returnValue):
+            gen.generate_goomba(pygame.math.Vector2(960, 100), negate_speed = False, spiked = True)
+            return engine.Event.DETOUR_CONTINUE
+
         # Create the main ground.
         gen.generate_ground(pygame.math.Vector2(0, -416), 15, 2)
         gen.generate_ground(pygame.math.Vector2(896, -416), 10, 2)
@@ -63,6 +69,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create the power-up blocks.
         gen.generate_powerup_block(pygame.math.Vector2(960, -288), spiked = True)
         rocket = gen.generate_powerup_block(pygame.math.Vector2(992, -288), fall = True)
+        rocket[0].get_event("release_fixed").hook(rocket_block_goomba)
         gen.insert_powerup(rocket[0], "rocket_launcher")
 
         # Just after the initial platform, there should be a layer of ground
