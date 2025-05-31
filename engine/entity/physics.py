@@ -23,11 +23,43 @@ CELL_SIZE = (75, 75)
 
 # Flags for defining collision.
 COLTYPE_COLLIDING = 0   # This entity is colliding another entity.
-COLTYPE_COLLIDED = 1    # This entity is being collided by another entity.
+COLTYPE_COLLIDED = 1    # This entity is being collided with by another entity.
 COLDIR_LEFT = 0         # This entity is colliding/being collided from the left.
 COLDIR_RIGHT = 1        # This entity is colliding/being collided from the right.
 COLDIR_UP = 2           # This entity is colliding/being collided from upwards.
 COLDIR_DOWN = 3         # This entity is colliding/being collided from downwards.
+
+# Did this entity collide with another entity below it?
+def is_collision_below(coltype, coldir):
+    if coltype == COLTYPE_COLLIDING and coldir == COLDIR_UP:
+        return True
+    if coltype == COLTYPE_COLLIDED and coldir == COLDIR_DOWN:
+        return True
+    return False
+
+# Did this entity collide with another entity above it?
+def is_collision_above(coltype, coldir):
+    if coltype == COLTYPE_COLLIDING and coldir == COLDIR_DOWN:
+        return True
+    if coltype == COLTYPE_COLLIDED and coldir == COLDIR_UP:
+        return True
+    return False
+
+# Did this entity collide with another entity to the left of it?
+def is_collision_leftwards(coltype, coldir):
+    if coltype == COLTYPE_COLLIDING and coldir == COLDIR_RIGHT:
+        return True
+    if coltype == COLTYPE_COLLIDED and coldir == COLDIR_LEFT:
+        return True
+    return False
+
+# Did this entity collide with another entity to the right of it?
+def is_collision_rightwards(coltype, coldir):
+    if coltype == COLTYPE_COLLIDING and coldir == COLDIR_LEFT:
+        return True
+    if coltype == COLTYPE_COLLIDED and coldir == COLDIR_RIGHT:
+        return True
+    return False
 
 # Spatial hash grid implementation, which will be responsible for organizing
 # entities.
@@ -494,4 +526,6 @@ class LLPhysics():
     
 # Define what should be imported from this module.
 __all__ = ["LLPhysics", "COLTYPE_COLLIDING", "COLTYPE_COLLIDED", 
-           "COLDIR_LEFT", "COLDIR_RIGHT", "COLDIR_UP", "COLDIR_DOWN"]
+           "COLDIR_LEFT", "COLDIR_RIGHT", "COLDIR_UP", "COLDIR_DOWN",
+           "is_collision_below", "is_collision_above",
+           "is_collision_leftwards", "is_collision_rightwards"]

@@ -186,8 +186,7 @@ class Player(engine.entity.Sprite, Humanoid):
     # Handle additional collision resolution code.
     def collisionfinal(self, other, coltype, coldir):
         # If this player hit another entity from below, stop jumping.
-        if ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_DOWN)
-            or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_UP)):
+        if (engine.entity.is_collision_above(coltype, coldir)):
             self.__jumping = -1
             self.block_hit_sound.repeat()
         

@@ -96,9 +96,11 @@ class LevelGenerator():
     
     # Generate a small hill.
     def generate_hill(self, offset, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 3, offset, draw = draw, spiked = spiked)
+        ents = self.__generate_tiles("tile", 3, offset, draw = draw, spiked = spiked,
+                                     before_entity = self.__engine.entity_head())
         ents.extend(self.__generate_tiles("tile", 3, offset + pygame.math.Vector2(32, 0), 
-                                          draw = draw, spiked = spiked))
+                                          draw = draw, spiked = spiked,
+                                          before_entity = self.__engine.entity_head()))
         for ent in ents:
             ent.movetype = engine.entity.MOVETYPE_NONE
         ents[1].flip(flip_x = True)
@@ -106,12 +108,14 @@ class LevelGenerator():
     
     # Generate a bush.
     def generate_bush(self, offset, length = 2, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 4, offset)
+        ents = self.__generate_tiles("tile", 4, offset, before_entity = self.__engine.entity_head())
         if length > 2:
             ents.extend(self.__generate_tiles(
-                "tile", 5, offset + pygame.math.Vector2(32, 0), length - 2, draw = draw, spiked = spiked))
+                "tile", 5, offset + pygame.math.Vector2(32, 0), length - 2, draw = draw, spiked = spiked,
+                before_entity = self.__engine.entity_head()))
         ents.extend(self.__generate_tiles(
-            "tile", 4, offset + pygame.math.Vector2((length - 1) * 32, 0), draw = draw, spiked = spiked))
+            "tile", 4, offset + pygame.math.Vector2((length - 1) * 32, 0), draw = draw, spiked = spiked,
+            before_entity = self.__engine.entity_head()))
         for ent in ents:
             ent.movetype = engine.entity.MOVETYPE_NONE
         ents[-1].flip(flip_x = True)
@@ -119,12 +123,14 @@ class LevelGenerator():
     
     # Generate a cloud.
     def generate_cloud(self, offset, length = 2, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 6, offset)
+        ents = self.__generate_tiles("tile", 6, offset, before_entity = self.__engine.entity_head())
         if length > 2:
             ents.extend(self.__generate_tiles(
-                "tile", 7, offset + pygame.math.Vector2(32, 0), length - 2, draw = draw, spiked = spiked))
+                "tile", 7, offset + pygame.math.Vector2(32, 0), length - 2, draw = draw, spiked = spiked,
+                before_entity = self.__engine.entity_head()))
         ents.extend(self.__generate_tiles(
-            "tile", 6, offset + pygame.math.Vector2((length - 1) * 32, 0), draw = draw, spiked = spiked))
+            "tile", 6, offset + pygame.math.Vector2((length - 1) * 32, 0), draw = draw, spiked = spiked,
+            before_entity = self.__engine.entity_head()))
         for ent in ents:
             ent.movetype = engine.entity.MOVETYPE_NONE
         ents[-1].flip(flip_x = True)
@@ -132,11 +138,13 @@ class LevelGenerator():
     
     # Generate a funny cloud. The movetype will not be set to handle collision events.
     def generate_funny_cloud(self, offset, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 6, offset)
+        ents = self.__generate_tiles("tile", 6, offset, before_entity = self.__engine.entity_head())
         ents.extend(self.__generate_tiles("tile", 23, offset + pygame.math.Vector2(32, 0), 
-                                          draw = draw, spiked = spiked))
+                                          draw = draw, spiked = spiked,
+                                          before_entity = self.__engine.entity_head()))
         ents.extend(self.__generate_tiles("tile", 6, offset + pygame.math.Vector2(64, 0),
-                                          draw = draw, spiked = spiked))
+                                          draw = draw, spiked = spiked,
+                                          before_entity = self.__engine.entity_head()))
         ents[2].flip(flip_x = True)
         return ents
     
@@ -146,7 +154,8 @@ class LevelGenerator():
     
     # Generate void tiles. Collision will be off by default.
     def generate_void(self, offset, length = 1, height = 1, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 15, offset, length, height, draw, spiked)
+        ents = self.__generate_tiles("tile", 15, offset, length, height, draw, spiked,
+                                     before_entity = self.__engine.entity_head())
         for ent in ents:
             ent.movetype = engine.entity.MOVETYPE_NONE
         return ents
@@ -164,7 +173,8 @@ class LevelGenerator():
     
     # Generate ropes that you can jump through.
     def generate_rope(self, offset, length = 1, draw = True, spiked = False):
-        ents = self.__generate_tiles("tile", 18, offset, length, 1, draw, spiked)
+        ents = self.__generate_tiles("tile", 18, offset, length, 1, draw, spiked,
+                                     before_entity = self.__engine.entity_head())
         for ent in ents:
             ent.get_event("collision").set_func(
                 lambda hit, other, coltype, coldir: self.__hit_rope(hit, other, coltype, coldir))
@@ -206,7 +216,8 @@ class LevelGenerator():
     
     # Generate map coins.
     def generate_coin(self, offset, length = 1, height = 1, draw = True, spiked = False):
-        ents = self.__generate_sprites("coin", offset, length, height, draw, spiked)
+        ents = self.__generate_sprites("coin", offset, length, height, draw, spiked,
+                                       before_entity = self.__engine.entity_head())
         for ent in ents:
             ent.level = self.__level
         return ents
@@ -293,7 +304,7 @@ class LevelGenerator():
     # Generate a Goomba.
     def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
         ents = self.__generate_sprites("goomba", offset, length, draw = draw, spiked = spiked,
-                                       before_entity = self.__engine.entity_head())
+                                       before_entity = self.__level.player)
         for ent in ents:
             ent.level = self.__level
             ent.negate_speed = negate_speed
@@ -302,7 +313,7 @@ class LevelGenerator():
     # Generate a Koopa.
     def generate_koopa(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
         ents = self.__generate_sprites("koopa", offset, length, draw = draw, spiked = spiked,
-                                       before_entity = self.__engine.entity_head())
+                                       before_entity = self.__level.player)
         for ent in ents:
             ent.level = self.__level
             ent.negate_speed = negate_speed
@@ -311,14 +322,15 @@ class LevelGenerator():
     # Generate a flagpole.
     def generate_flagpole(self, offset, draw = True, troll = False, has_flag = True):
         # Create the flagpole itself
-        ent = self.__generate_sprites("flagpole", offset, draw = draw)
+        ent = self.__generate_sprites("flagpole", offset, draw = draw, 
+                                      before_entity = self.__engine.entity_head())
         if troll:
             ent[0].index = 1
 
         # If desired, create a flag as well.
         if has_flag:
             ent.extend(self.__generate_sprites("sprite", offset + pygame.math.Vector2(
-                8, -12), draw = draw))
+                8, -12), draw = draw, before_entity = self.__engine.entity_head()))
             ent[1].load("lostlevels/assets/sprites/flag.png", (43, 29), 1)
             ent[1].movetype = engine.entity.MOVETYPE_NONE
 
@@ -354,11 +366,12 @@ class LevelGenerator():
         block.get_event("release_fixed" if fixed else "release").set_func(release_fixed)
 
     # Internal code for generating an array of tiles.
-    def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False):
+    def __generate_tiles(self, classname, index, offset, length = 1, height = 1, draw = True, spiked = False,
+                         before_entity = None):
         ents = []
         for y in range(0, height):
             for x in range(0, length):
-                ent = self.__engine.create_entity_by_class(classname)
+                ent = self.__engine.create_entity_by_class(classname, before_entity)
                 ent.load(f"lostlevels/assets/biomes/{self.__biome}/main.png", (32, 32), index)
                 ent.set_baseorigin(offset + pygame.math.Vector2(x * 32, -y * 32))
                 ent.draw = draw

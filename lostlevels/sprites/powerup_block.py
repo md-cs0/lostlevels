@@ -120,8 +120,7 @@ class PowerupBlock(engine.entity.Sprite):
         # Otherwise, check if it hasn't released a power-up when in free-fall.
         elif not self.released and self.fall:
             # If it didn't collide with an entity below, continue.
-            if not ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_UP)
-                    or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_DOWN)):
+            if not engine.entity.is_collision_below(coltype, coldir):
                 return
             
             # Release the power-up after fixing itself.

@@ -106,9 +106,7 @@ class Koopa(EnemyBase):
                 self.block_hit_sound.repeat()
             
         # If the player hit this enemy from above, invoke the player_hit event.
-        if (((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_DOWN)
-            or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_UP))
-            and other.get_class() == "player"):
+        if engine.entity.is_collision_above(coltype, coldir) and other.get_class() == "player":
             other.add_velocity_y = 400
             other.jump_multiplier = 1.2
             self.invoke_event("player_hit", other)

@@ -26,17 +26,17 @@ class Moveable(engine.entity.Sprite):
     def collisionfinal(self, other, coltype, coldir):
         # If this moveable was moving to the left and collided with a wall
         # to the left of it, change directions.
-        if ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_RIGHT)
-            or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_LEFT)
-            and self.negate_speed):
+        if engine.entity.is_collision_leftwards(coltype, coldir) and self.negate_speed:
             self.negate_speed = not self.negate_speed
 
         # If this moveable was moving to the right and collided with a wall
         # to the right of it, change directions.
-        elif ((coltype == engine.entity.COLTYPE_COLLIDING and coldir == engine.entity.COLDIR_LEFT)
-            or (coltype == engine.entity.COLTYPE_COLLIDED and coldir == engine.entity.COLDIR_RIGHT)
-            and not self.negate_speed):
+        elif engine.entity.is_collision_rightwards(coltype, coldir) and not self.negate_speed:
             self.negate_speed = not self.negate_speed
+
+        # Otherwise, do not evaluate anything.
+        else:
+            return
 
         # If the other entity is a moveable, set its negate_speed attribute to
         # be the opposite of this moveable's negate_speed.
