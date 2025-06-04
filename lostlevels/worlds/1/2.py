@@ -147,6 +147,11 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_destructible(pygame.math.Vector2(2944, -96), 8, 10)
         gen.generate_koopa(pygame.math.Vector2(2752, -368))
 
+        # Create the wall that must be destroyed by the rocket launcher. A Goomba
+        # is created to help the player with destroying the wall.
+        gen.generate_blocks(pygame.math.Vector2(3744, -96), height = 10)
+        gen.generate_goomba(pygame.math.Vector2(3712, -390))
+
         # Return the level data for the main section.
         return data
     
