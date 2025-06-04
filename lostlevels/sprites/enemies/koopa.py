@@ -102,7 +102,7 @@ class Koopa(EnemyBase):
                     return engine.Event.DETOUR_CONTINUE
                 
             # Otherwise, if the Koopa is being kicked, play an impact sound.
-            else:
+            elif self.kicked:
                 self.block_hit_sound.repeat()
             
         # If the player hit this enemy from above, invoke the player_hit event.

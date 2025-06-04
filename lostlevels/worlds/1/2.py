@@ -21,6 +21,7 @@ class Level12_main(levelgenerator.LevelData):
 
         # Manage whether some obstacles have spawned already.
         self.big_goomba_spawned = False
+        self.boulder_spawned = False
 
         # Set the time limit to 150.
         self.time_limit = 150
@@ -43,6 +44,41 @@ class Level12_main(levelgenerator.LevelData):
             screaming = self._engine.create_sound("lostlevels/assets/audio/objects/scream.ogg")
             screaming.volume = 1
             screaming.play()
+
+        # Create a timer for creating a boulder when the player is within the destructible wall.
+        if (not self.boulder_spawned and self._level.player.get_baseorigin().x > 3072
+            and self._level.player.get_baseorigin().x < 3648):
+            # Play the boulder sound effect.
+            boulder = self._engine.create_sound("lostlevels/assets/audio/objects/boulder.ogg")
+            boulder.volume = 1
+            boulder.play()
+
+            # Create a timer for creating a boulder after 0.5s.
+            self._engine.create_timer(self.create_boulder, 0.5)
+            self.boulder_spawned = True
+
+    # Create the boulder.
+    def create_boulder(self):
+        boulder = self._engine.create_entity_by_class("rect")
+        boulder.movetype = engine.entity.MOVETYPE_CUSTOM
+        boulder.colour = pygame.Color(128, 128, 128)
+        boulder.set_hitbox(pygame.math.Vector2(48, 48))
+        boulder.set_baseorigin(pygame.math.Vector2(self._level.player.get_baseorigin().x - 288, -368))
+        boulder.velocity.x = 1152
+        boulder.get_event("collision").set_func(boulder_hit)
+
+# If the boulder hits something within the player's viewpoint, destroy it.
+def boulder_hit(self, other, coltype, coldir):
+    # If this is not caused by the boulder itself, continue.
+    if coltype != engine.entity.COLTYPE_COLLIDING:
+        return
+    
+    # If the other entity is not within the player's viewpoint, continue.
+    if other.get_absorigin().x > 576:
+        return
+    
+    # Destroy the entity.
+    self._engine.delete_entity(other)
 
 # Return a path to the image preview of this level.
 def get_preview():
@@ -99,6 +135,17 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # "missing textures", i.e. the placeholder entries used in the desert biome's
         # tilesheets. Yes, this is intentional.
         gen.generate_bush(pygame.math.Vector2(2272, -384), 4)
+
+        # Create a wall after the bush which is too tall to jump over, but contains
+        # invisible blocks next to it, allowing the player to propel themselves
+        # upwards. One of the invisible power-up blocks will be spiked.
+        gen.generate_blocks(pygame.math.Vector2(2496, -96), height = 10)
+        gen.generate_powerup_block(pygame.math.Vector2(2464, -256), draw = False)
+        gen.generate_powerup_block(pygame.math.Vector2(2432, -256), draw = False, spiked = True)
+
+        # Create a stack of destructible blocks with a Koopa.
+        gen.generate_destructible(pygame.math.Vector2(2944, -96), 8, 10)
+        gen.generate_koopa(pygame.math.Vector2(2752, -368))
 
         # Return the level data for the main section.
         return data
