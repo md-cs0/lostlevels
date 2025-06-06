@@ -23,6 +23,9 @@ class Level12_main(levelgenerator.LevelData):
         self.big_goomba_spawned = False
         self.boulder_spawned = False
 
+        # Manage the falling pipe top.
+        self.falling_pipe_top = None
+
         # Set the time limit to 150.
         self.time_limit = 150
 
@@ -56,6 +59,11 @@ class Level12_main(levelgenerator.LevelData):
             # Create a timer for creating a boulder after 0.5s.
             self._engine.create_timer(self.create_boulder, 0.5)
             self.boulder_spawned = True
+
+        # Once the player reaches the end of the level, unanchor the vertical pipe top.
+        if self._level.player.get_baseorigin().x > 4288:
+            for top in self.falling_pipe_top:
+                top.movetype = engine.entity.MOVETYPE_PHYSICS
 
     # Create the boulder.
     def create_boulder(self):
@@ -155,6 +163,51 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create a checkpoint after the wall. It should be far enough away so that it
         # cannot get blown up by the rocket launcher.
         gen.generate_checkpoint(pygame.math.Vector2(4096, -337))
+
+        # Sideways pipe at the end of the overground section: launch a boulder outwards
+        # and kill the player.
+        def side_pipe_collisionfinal(self, other, coltype, coldir):
+            # If the other entity is not the player, continue.
+            if other.get_class() != "player":
+                return
+
+            # If the player is already dead, continue.
+            if not other.alive:
+                return
+            
+            # Play the boulder sound effect.
+            boulder = self._engine.create_sound("lostlevels/assets/audio/objects/boulder.ogg")
+            boulder.volume = 1
+            boulder.play()
+            
+            # Create a boulder and kill the player.
+            boulder = self._engine.create_entity_by_class("rect", self)
+            boulder.movetype = engine.entity.MOVETYPE_PHYSICS
+            boulder.colour = pygame.Color(128, 128, 128)
+            boulder.set_hitbox(pygame.math.Vector2(48, 48))
+            boulder.set_baseorigin(pygame.math.Vector2(4464, -368))
+            boulder.velocity = pygame.math.Vector2(-1152, 200)
+            self.level.death()
+            self.movetype = engine.entity.MOVETYPE_NONE
+
+        # Create the final part of this level where two pipes exist. One pipe will
+        # launch a boulder at the player, whereas the other will fall from the sky but
+        # actually allow the player to enter the underground section.
+        gen.generate_pipe_2x2(pygame.math.Vector2(4544, -384), leftroot = True)
+        gen.generate_pipe_body(pygame.math.Vector2(4512, -352), orientation = lostlevels.sprites.PIPE_270)
+        gen.generate_pipe_body(pygame.math.Vector2(4544, -320))
+        data.falling_pipe_top = gen.generate_pipe_top(pygame.math.Vector2(4544, 100), 
+                                                      section = "underground")
+        for top in data.falling_pipe_top:
+            top.movetype = engine.entity.MOVETYPE_ANCHORED
+        side = gen.generate_pipe_top(pygame.math.Vector2(4480, -352), lostlevels.sprites.PIPE_270)
+        side[0].get_event("collisionfinal").set_func(side_pipe_collisionfinal)
+
+        # Disable scrolling beyond these pipes.
+        level.max_scroll = 4032
+
+        # Create a wall beyond the pipes as well so that the player cannot progress beyond the map.
+        gen.generate_ground(pygame.math.Vector2(4608, 0), height = 15)
 
         # Return the level data for the main section.
         return data
