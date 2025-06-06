@@ -4,6 +4,7 @@ from .powerup_block import PowerupBlock
 from .coin import Coin
 from .moveable import Moveable
 from .flagpole import FlagPole
+from .checkpoint import Checkpoint
 from .pipe_top import *
 from .game_flags import *
 from . import powerups 

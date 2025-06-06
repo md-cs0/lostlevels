@@ -65,6 +65,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("pipetop", sprites.PipeTop)
         self._engine.register_classname("moveable", sprites.Moveable)
         self._engine.register_classname("flagpole", sprites.FlagPole)
+        self._engine.register_classname("checkpoint", sprites.Checkpoint)
         self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
         self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
         self._engine.register_classname("rocket_launcher", sprites.powerups.RocketLauncher)
@@ -84,6 +85,9 @@ class LostLevels(engine.Game):
         self.world = 0
         self.level = 0
         self.levelmodule = None
+        self.checkpoint_time_limit = None
+        self.checkpoint_player_offset = None
+        self.checkpoint_level = None
 
     # Tweak the default width and height of this game to 576x480
     # and fix the game resolution to it. Furthermore, load the
@@ -151,6 +155,9 @@ class LostLevels(engine.Game):
             self.__melody = self.__harmony1 = self.__harmony2 = self.__bass = None
 
         # Change the scene to the level selection map scene.
+        self.checkpoint_time_limit = None
+        self.checkpoint_player_offset = None
+        self.checkpoint_level = None
         self.__sceneindex = SCENE_LEVELSELECT
         self.__scene = scenes.LevelSelection(self._engine, self)
 

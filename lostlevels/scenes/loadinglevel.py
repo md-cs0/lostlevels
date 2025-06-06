@@ -72,6 +72,14 @@ class LoadingLevel(engine.Game):
         # If the player selected a custom level, clear the current UI elements.
         self._engine.clear_foreground_elements()
 
+        # If there exists any checkpoint data and there is a discrepancy between
+        # the cached level number and the actual loaded level, wipe out the 
+        # checkpoint data.
+        if self.__game.checkpoint_level and self.__game.checkpoint_level != self.__game.level:
+            self.__game.checkpoint_time_limit = None
+            self.__game.checkpoint_player_offset = None
+            self.__game.checkpoint_level = None
+
         # Verify the existence of the level module and load it.
         self._engine.console.log(f"[Lost Levels]: loading world {self.__game.world}-{self.__game.level}")
         path = f"lostlevels/worlds/{self.__game.world}/{self.__game.level}.py"

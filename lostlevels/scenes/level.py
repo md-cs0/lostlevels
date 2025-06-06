@@ -16,8 +16,6 @@ class Level(engine.Game):
         # Initialize the game interface.
         super().__init__(eng)
         self.__game = game
-        self._engine.console.log(
-            f"[Lost Levels]: loading section \"{section}\" from world {game.world}-{game.level}")
 
         # Declare some of the fundamental level props in advance.
         self.backgroundmain = None
@@ -45,7 +43,12 @@ class Level(engine.Game):
                 f"[Lost Levels]: invalid section name \"{section}\" for world {game.world}-{game.level}!")
 
         # With the map finally generated, spawn the player at the given offest and activate it.
-        self.player.set_baseorigin(offset if offset else self.leveldata.player_offset)
+        if first_time:
+            player_offset = (self.__game.checkpoint_player_offset if self.__game.checkpoint_player_offset
+                             else self.leveldata.player_offset)
+        else:
+            player_offset = offset if offset else self.leveldata.player_offset
+        self.player.set_baseorigin(player_offset)
         self._engine.activate_entity(self.player)
 
         # Create a wall to prevent the player from walking out of the map.
@@ -67,7 +70,9 @@ class Level(engine.Game):
         self.scroll_map()
 
         # Create the level timer.
-        self.time_remaining = self.leveldata.time_limit if first_time else time_remaining
+        if self.__game.checkpoint_time_limit == None:
+            self.__game.checkpoint_time_limit = self.leveldata.time_limit
+        self.time_remaining = self.__game.checkpoint_time_limit if first_time else time_remaining
 
         # Create a buffer for the last 10 key inputs registered.
         self.last_keys = [None] * 10
@@ -83,9 +88,25 @@ class Level(engine.Game):
         self.esc_prompt.set_colour(pygame.Color(255, 255, 255))
         self.esc_prompt.set_x_align(engine.ui.X_CENTRE)
 
+        # Log the relevant information about this level.
+        self._engine.console.log(f"[Lost Levels]: loading section \"{section}\" from world " \
+                                 f"{game.world}-{game.level} at player offset " \
+                                 f"({player_offset.x}, {player_offset.y}) and time limit " \
+                                 f"{self.time_remaining:.0f}")
+
     # Get the save from the game object.
     def get_save(self):
         return self.__game.save
+    
+    # Get the current checkpoint data.
+    def get_checkpoint_data(self):
+        return (self.__game.checkpoint_time_limit, self.__game.checkpoint_player_offset)
+    
+    # If a checkpoint is selected, cache the checkpoint data.
+    def set_checkpoint_data(self, player_offset):
+        self.__game.checkpoint_time_limit = self.time_remaining
+        self.__game.checkpoint_player_offset = player_offset
+        self.__game.checkpoint_level = self.__game.level
     
     # Load a new level section.
     def load_newlevel(self, section, offset, time_remaining):

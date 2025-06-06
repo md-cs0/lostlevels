@@ -337,6 +337,21 @@ class LevelGenerator():
         # Return the flagpole.
         return ent
     
+    # Generate a checkpoint.   
+    def generate_checkpoint(self, offset):
+        # Generate the checkpoint.
+        ent = self.__generate_sprites("checkpoint", offset, before_entity = self.__level.player)
+        ent[0].level = self.__level
+
+        # Configure whether the checkpoint should be enabled by default based on the
+        # checkpoint player offset, if set up.
+        player_offset = self.__level.get_checkpoint_data()[1]
+        if player_offset and player_offset.x >= ent[0].get_baseorigin().x:
+            ent[0].index = 1
+
+        # Return the checkpoint.
+        return ent
+    
     # Insert a power-up into a power-up block. Set fixed to false if
     # the power-up should be released immediately after hitting the power-up
     # block.

@@ -152,6 +152,10 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_blocks(pygame.math.Vector2(3744, -96), height = 10)
         gen.generate_goomba(pygame.math.Vector2(3712, -390))
 
+        # Create a checkpoint after the wall. It should be far enough away so that it
+        # cannot get blown up by the rocket launcher.
+        gen.generate_checkpoint(pygame.math.Vector2(4096, -337))
+
         # Return the level data for the main section.
         return data
     
