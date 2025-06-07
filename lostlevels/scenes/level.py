@@ -72,6 +72,7 @@ class Level(engine.Game):
         # Create the level timer.
         if self.__game.checkpoint_time_limit == None:
             self.__game.checkpoint_time_limit = self.leveldata.time_limit
+        self.__game.checkpoint_level = self.__game.level
         self.time_remaining = self.__game.checkpoint_time_limit if first_time else time_remaining
 
         # Create a buffer for the last 10 key inputs registered.
