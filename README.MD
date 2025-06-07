@@ -19,6 +19,7 @@ This game was originally developed locally until I decided to instantiate a Git 
 - Apple's Power Macintosh computers for some crash chimes
 - THX for their Deep Note
 - [Goatmeal for the NES style font](https://fontstruct.com/fontstructions/show/406653/nintendo_nes_font)
+- [Wikimedia for the 1996 Stock diagram](https://commons.wikimedia.org/wiki/File:1996_Stock_Train_Diagram_(7-car).png)
 
 # Song credits
 - Santo & Johnny - Sleepwalk

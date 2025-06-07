@@ -11,7 +11,7 @@ from .. import sample_hooks
 
 # Define the level data for this level's main section.
 class Level12_main(levelgenerator.LevelData):
-    # Create the level data for the current section.
+    # Create the level data for the main section.
     def __init__(self, eng, level, player_offset, biome):
         # Call the LevelData constructor.
         super().__init__(eng, level, player_offset, biome)
@@ -74,6 +74,56 @@ class Level12_main(levelgenerator.LevelData):
         boulder.set_baseorigin(pygame.math.Vector2(self._level.player.get_baseorigin().x - 288, -368))
         boulder.velocity.x = 1152
         boulder.get_event("collision").set_func(boulder_hit)
+
+# Define the level data for this level's underground section.
+class Level12_underground(levelgenerator.LevelData):
+    # Create the level data for the underground section.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Play the level music. 
+        level.play_music(biome)
+
+        # Cache the non-collideable wall, as the train entity must be linked before its
+        # first entity
+        self.wall = None
+
+        # Manage whether some obstacles have spawned already.
+        self.train_spawned = False
+        self.train = None
+
+    # Manage certain obstacles.
+    def per_frame(self):
+        # Once the player reaches the trigger point, spawn a 1996 Stock train
+        # that will constantly accelerate, before deleting the train once it
+        # reaches far out of the player's view.
+        if (not self.train_spawned and self._level.player.get_baseorigin().x > 1152
+            and self._level.player.get_baseorigin().x < 1312):
+            # Spawn the 1996 Stock train.
+            self.train = self._engine.create_entity_by_class("sprite", self.wall[0])
+            self.train.movetype = engine.entity.MOVETYPE_CUSTOM
+            self.train.load("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
+            self.train.set_baseorigin(pygame.math.Vector2(-6044, -290))
+            self.train.get_event("collision").set_func(boulder_hit)
+            self._engine.activate_entity(self.train)
+            self.train_spawned = True
+
+            # Play the 1996 Stock sound effect.
+            motors = self._engine.create_sound("lostlevels/assets/audio/objects/1996_stock.ogg")
+            motors.volume = 1
+            motors.play()
+
+        # If the train has spawned already, accelerate it until it reaches the end of the
+        # scene, before it eventually gets deleted.
+        if self.train_spawned and self.train:
+            # Accelerate the train gradually.
+            self.train.velocity.x += 80 * self._engine.globals.frametime
+
+            # If the train is beyond the player's viewpoint, destroy it.
+            if self.train.get_absorigin().x > 576:
+                self._engine.delete_entity(self.train)
+                self.train = None
 
 # If the boulder hits something within the player's viewpoint, destroy it.
 def boulder_hit(self, other, coltype, coldir):
@@ -210,6 +260,71 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(4608, 0), height = 15)
 
         # Return the level data for the main section.
+        return data
+    
+    # Is this the underground section?
+    elif section == "underground":
+        # Create the level generator and level data for this section.
+        gen = levelgenerator.LevelGenerator(eng, level, "underground")
+        data = Level12_underground(eng, level, pygame.math.Vector2(64, -64), "underground")
+
+        # Create the left wall and ceiling.
+        gen.generate_destructible(pygame.math.Vector2(0, -64), height = 11)
+        gen.generate_destructible(pygame.math.Vector2(128, -64), 200)
+
+        # Create the initial ground. The part that the player will land on will
+        # unanchor itself once the player collides with it.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 2, 2)
+        troll_ground = gen.generate_ground(pygame.math.Vector2(64, -416), 1, 2)
+        for ground in troll_ground:
+            ground.get_event("collisionfinal").set_func(
+                lambda hit, other, coltype, coldir: 
+                    sample_hooks.unanchor_on_collide(eng, troll_ground, hit, other, coltype, coldir))
+        gen.generate_ground(pygame.math.Vector2(96, -416), 7, 2)
+
+        # Create some elevated ground.
+        gen.generate_ground(pygame.math.Vector2(288, -288), height = 4)
+        gen.generate_ground(pygame.math.Vector2(288, -256), 25)
+
+        # Prior to a scene that will feature a train, insert two power-up blocks. The player
+        # can use this to propel themselves upwards and onto the roof, where there will
+        # also be a bunch of Goombas.
+        gen.generate_powerup_block(pygame.math.Vector2(640, -160), length = 2)
+        for i in range(0, 16):
+            gen.generate_goomba(pygame.math.Vector2(1216, -32 + i * 26))
+
+        # Create the platform and walls for the train that will come out later.
+        gen.generate_ground(pygame.math.Vector2(320, -448), 45)
+        data.wall = gen.generate_ground(pygame.math.Vector2(320, -288), length = 19, height = 5)
+        for block in data.wall:
+            block.movetype = engine.entity.MOVETYPE_NONE
+        gen.generate_void(pygame.math.Vector2(928, -288), length = 5, height = 5)
+
+        # Create a falling platform after the elevated ground.
+        falling_platform = gen.generate_ground(pygame.math.Vector2(1088, -256), length = 4)
+        for ground in falling_platform:
+            ground.get_event("collisionfinal").set_func(
+                lambda hit, other, coltype, coldir: 
+                    sample_hooks.unanchor_on_collide(eng, falling_platform, hit, other, coltype, coldir))
+            
+        # Create some additional ground and another wall. Some of the wall will be destroyed
+        # by the train, allowing the player to progress through the map if the train is
+        # utilised correctly.
+        gen.generate_ground(pygame.math.Vector2(1216, -256), length = 2)
+        gen.generate_ground(pygame.math.Vector2(1280, -96), height = 11)
+        gen.generate_ground(pygame.math.Vector2(1312, -256))
+        gen.generate_ground(pygame.math.Vector2(1440, -256), length = 10)
+
+        # Create another falling platform on the other side.
+        falling_platform_for_use = gen.generate_ground(pygame.math.Vector2(1344, -256), length = 3)
+        for ground in falling_platform_for_use:
+            ground.velocity.y = 200
+            ground.get_event("collisionfinal").set_func(
+                lambda hit, other, coltype, coldir: 
+                    sample_hooks.unanchor_on_collide(eng, falling_platform_for_use, hit, other, coltype, 
+                                                     coldir, True))
+
+        # Return the level data for the underground section.
         return data
     
     # Invalid section?
