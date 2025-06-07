@@ -89,7 +89,7 @@ class Level12_underground(levelgenerator.LevelData):
         # first entity
         self.wall = None
 
-        # Manage whether some obstacles have spawned already.
+        # Manage the train.
         self.train_spawned = False
         self.train = None
 
@@ -270,7 +270,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
 
         # Create the left wall and ceiling.
         gen.generate_destructible(pygame.math.Vector2(0, -64), height = 11)
-        gen.generate_destructible(pygame.math.Vector2(128, -64), 200)
+        gen.generate_destructible(pygame.math.Vector2(128, -64), 61)
 
         # Create the initial ground. The part that the player will land on will
         # unanchor itself once the player collides with it.
@@ -289,12 +289,12 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Prior to a scene that will feature a train, insert two power-up blocks. The player
         # can use this to propel themselves upwards and onto the roof, where there will
         # also be a bunch of Goombas.
-        gen.generate_powerup_block(pygame.math.Vector2(640, -160), length = 2)
+        gen.generate_powerup_block(pygame.math.Vector2(640, -160), 2)
         for i in range(0, 16):
             gen.generate_goomba(pygame.math.Vector2(1216, -32 + i * 26))
 
         # Create the platform and walls for the train that will come out later.
-        gen.generate_ground(pygame.math.Vector2(320, -448), 45)
+        gen.generate_ground(pygame.math.Vector2(320, -448), 55)
         data.wall = gen.generate_ground(pygame.math.Vector2(320, -288), length = 19, height = 5)
         for block in data.wall:
             block.movetype = engine.entity.MOVETYPE_NONE
@@ -310,10 +310,10 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create some additional ground and another wall. Some of the wall will be destroyed
         # by the train, allowing the player to progress through the map if the train is
         # utilised correctly.
-        gen.generate_ground(pygame.math.Vector2(1216, -256), length = 2)
+        gen.generate_ground(pygame.math.Vector2(1216, -256), 2)
         gen.generate_ground(pygame.math.Vector2(1280, -96), height = 11)
         gen.generate_ground(pygame.math.Vector2(1312, -256))
-        gen.generate_ground(pygame.math.Vector2(1440, -256), length = 10)
+        gen.generate_ground(pygame.math.Vector2(1440, -256), 20)
 
         # Create another falling platform on the other side.
         falling_platform_for_use = gen.generate_ground(pygame.math.Vector2(1344, -256), length = 3)
@@ -323,6 +323,33 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
                 lambda hit, other, coltype, coldir: 
                     sample_hooks.unanchor_on_collide(eng, falling_platform_for_use, hit, other, coltype, 
                                                      coldir, True))
+            
+        # At the end of the lower half of the map, block it off with a wall and a pipe that
+        # will just simply take you back to the start of the underground map.
+        gen.generate_ground(pygame.math.Vector2(2048, -288), height = 5)
+        gen.generate_pipe_body(pygame.math.Vector2(1984, -416))
+        gen.generate_pipe_top(pygame.math.Vector2(1984, -384), section = "underground",
+                              player_offset = pygame.math.Vector2(64, -64))
+        
+        # Rising platform: increase the velocity per gravity per frame.
+        def platform_per_frame(self):
+            self.velocity.y += self._engine.find_gvar("gravity").get() * self._engine.globals.frametime
+        
+        # Rising platform: upon collision, configure the per_frame event.
+        def platform_collisionfinal(group):
+            for piece in group:
+                piece.get_event("per_frame").set_func(platform_per_frame)
+
+        # Create a platform that rises, instead of falls, upon standing on.
+        rising_platform = gen.generate_platform(pygame.math.Vector2(2208, -288), 4)
+        for piece in rising_platform:
+            piece.get_event("collisionfinal").set_func(
+                lambda hit, other, coltype, coldir: platform_collisionfinal(rising_platform))
+            
+        # Create the flagpole area.
+        gen.generate_ground(pygame.math.Vector2(2528, -416), 100, 2)
+        gen.generate_blocks(pygame.math.Vector2(2848, -384))
+        gen.generate_flagpole(pygame.math.Vector2(2858, -106))
 
         # Return the level data for the underground section.
         return data

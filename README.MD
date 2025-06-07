@@ -14,6 +14,7 @@ This game was originally developed locally until I decided to instantiate a Git 
 # Credits
 - Super Mario Advance for the overground theme
 - Super Mario Advance 4 for some soundtracks and SFX
+- Syobon no Action for the Goomba design
 - Nintendo GameCube for SFX
 - Half-Life for some SFX
 - Apple's Power Macintosh computers for some crash chimes

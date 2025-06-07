@@ -195,6 +195,11 @@ class Player(engine.entity.Sprite, Humanoid):
             and self.level):
             self.level.death()
 
+        # If the player landed at an insanely fast speed, kill the player.
+        if (self.velocity.y < -1000 and coltype == engine.entity.COLTYPE_COLLIDING 
+            and coldir == engine.entity.COLDIR_UP and self.level):
+            self.level.death()
+
     # Used for utilizing entities.
     def keydown(self, enum, unicode, focused):
         # If this is the Z key, fire a weapon if equipped and return.
