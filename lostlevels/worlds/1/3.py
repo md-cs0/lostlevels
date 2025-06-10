@@ -1,8 +1,4 @@
-"""This is some test level that will later be moved to somewhere else.
-
-Maybe I might add it to world 2, so that if you modify the game's source code,
-you should technically be able to enter this level, although there's nothing
-to do here."""
+"""World 1-3."""
 
 import pygame
 import engine
@@ -12,12 +8,12 @@ import lostlevels.sprites
 
 from .. import levelgenerator
 
-# Define the level data for this level's main section.
-class Level11_main(levelgenerator.LevelData):
-    # Create the level data for the current section.
-    def __init__(self, engine, level, player_offset, biome):
+# Define the level data for this level's primary sections.
+class Level13_main(levelgenerator.LevelData):
+    # Create the level data for the primary sections.
+    def __init__(self, eng, level, player_offset, biome):
         # Call the LevelData constructor.
-        super().__init__(engine, level, player_offset, biome)
+        super().__init__(eng, level, player_offset, biome)
 
         # Play the level music. 
         level.play_music(biome)
@@ -27,74 +23,46 @@ def get_preview():
     return "engine/assets/missing.png"
 
 # Generate the level data for this level.
-def load_leveldata(engine: engine.LLEngine, level: lostlevels.scenes.Level, section):
-    # Is this the main section?
-    if section == "main":
-        # Create the level generator and level data for this section.
-        gen = levelgenerator.LevelGenerator(engine, level, "overground")
-        data = Level11_main(engine, level, pygame.math.Vector2(0, 0), "overground")
+def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section):
+    # Currently, the only level data used for this level will be Level13_main.
+    # As one of the pipes will change the biome used for the main section, the
+    # section name must be parsed briefly in order to obtain biome information.
 
-        # Temp.
-        gen.generate_ground(pygame.math.Vector2(0, -416), 50, 2)
-        gen.generate_destructible(pygame.math.Vector2(128, -288), 4)
-        gen.generate_hill(pygame.math.Vector2(128, -384))
-        gen.generate_bush(pygame.math.Vector2(256, -384), 10)
-        gen.generate_cloud(pygame.math.Vector2(512, -64), 4)
-        gen.generate_funny_cloud(pygame.math.Vector2(768, -64))
-        gen.generate_blocks(pygame.math.Vector2(768, -384), 10)
-        gen.generate_void(pygame.math.Vector2(992, -288), 3, 3)
-        gen.generate_blocks(pygame.math.Vector2(1056, -288), 1, 3)
-        gen.generate_athletic(pygame.math.Vector2(1728, -288), 5)
-        gen.generate_rope(pygame.math.Vector2(1760, -192), 5)
-        gen.generate_platform(pygame.math.Vector2(2144, -128), 4)
-        gen.generate_ballpoint(pygame.math.Vector2(2656, -448))
-        gen.generate_ice(pygame.math.Vector2(2688, -416), 50, 2)
-
-        # Temp.
-        gen.generate_powerup_block(pygame.math.Vector2(320, -288), 2)
-        gen.generate_powerup_block(pygame.math.Vector2(384, -288), decoy = True)
-        gen.generate_powerup_block(pygame.math.Vector2(416, -288), fall = True)
-        gen.generate_coin(pygame.math.Vector2(320, -224), 4)
-
-        # Temp.
-        gen.generate_pipe_body(pygame.math.Vector2(1152, -384), 2, lostlevels.sprites.PIPE_0)
-        gen.generate_pipe_2x2(pygame.math.Vector2(1152, -320), lostlevels.sprites.PIPE_0, True, True)
-        gen.generate_pipe_top(pygame.math.Vector2(1152, -256), lostlevels.sprites.PIPE_0)
-        gen.generate_pipe_body(pygame.math.Vector2(1120, -96), 5, lostlevels.sprites.PIPE_90)
-        gen.generate_pipe_2x2(pygame.math.Vector2(1280, -96), lostlevels.sprites.PIPE_90, True, True)
-        gen.generate_pipe_top(pygame.math.Vector2(1344, -96), lostlevels.sprites.PIPE_90)
-        gen.generate_pipe_body(pygame.math.Vector2(1280, -160), 5, lostlevels.sprites.PIPE_270)
-        gen.generate_pipe_2x2(pygame.math.Vector2(1120, -160), lostlevels.sprites.PIPE_270, True, True)
-        gen.generate_pipe_top(pygame.math.Vector2(1056, -160), lostlevels.sprites.PIPE_270)
-        gen.generate_pipe_body(pygame.math.Vector2(1216, -320), 2, lostlevels.sprites.PIPE_180)
-        gen.generate_pipe_2x2(pygame.math.Vector2(1216, -256), lostlevels.sprites.PIPE_180, True, True)
-        gen.generate_pipe_top(pygame.math.Vector2(1216, -384), lostlevels.sprites.PIPE_180)
-
-        # Temp.
-        gen.generate_pipe_body(pygame.math.Vector2(1536, -384), 4)
-        gen.generate_pipe_top(pygame.math.Vector2(1536, -256), section = "other")
-
-        # Temp.
-        gen.generate_powerup_block(pygame.math.Vector2(64, -288), draw = False)
-        gen.generate_destructible(pygame.math.Vector2(96, -288), draw = False)
-
-        # Temp.
-        gen.generate_powerup_block(pygame.math.Vector2(320, -160), spiked = True)
-
-        # Return the level data generated for this section.
-        return data
+    # Verify that the grammar of the section name is correct.
+    split = section.split("_")
+    if len(split) > 2:
+        return None
     
-    # Is this the "other" section?
-    elif section == "other":
-        # Create the level generator and level data for this section.
-        gen = levelgenerator.LevelGenerator(engine, level, "underground")
-        data = Level11_main(engine, level, pygame.math.Vector2(0, 0), "underground")
+    # Extract the biome and section information from the section name. Verify the
+    # biome given and create the level generator using the biome's name. If there 
+    # is no delimiter, assume that the biome is winter.
+    if len(split) == 2:
+        biome, name = split
+    else:
+        biome, name = "winter", split[0]
+    if biome != "overground" and biome != "winter":
+        return None
+    gen = levelgenerator.LevelGenerator(eng, level, biome)
+    
+    # Is this the main section?
+    if name == "main":
+        # Create the level data for this section.
+        data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
 
-        # Temp.
-        gen.generate_ground(pygame.math.Vector2(0, -416), 50, 2)
-        
+        # Stop the map from scrolling.
+        level.max_scroll = 0
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 18, 2)
+
+        # Create a pipe that the player will "fall" out of as they spawn.
+        pipe = gen.generate_pipe_body(pygame.math.Vector2(32, 0), orientation = lostlevels.sprites.PIPE_180)
+        pipe.extend(gen.generate_pipe_top(pygame.math.Vector2(32, -32), lostlevels.sprites.PIPE_180))
+        for piece in pipe:
+            piece.movetype = engine.entity.MOVETYPE_NONE
+
+        # TODO: 8 PIPES, FIRST TYPE TAKES YOU TO "overground_main" AT (52, 0), 
+        # THEN ADD INVISIBLE WALL TO THE RIGHT
+
         # Return the level data generated for this section.
         return data
-
-    # Invalid section?
-    return None

@@ -6,6 +6,12 @@ Admittedly, game development is not a major interest of mine. My original idea w
 
 This game was originally developed locally until I decided to instantiate a Git repository for it, albeit after the core of the engine has been mostly developed and after having started work on world 1-1 already.
 
+# Branches
+- master - for convenience per my coursework, this branch is used for the final project to be submitted in 2026.
+- pre_reset - this was the original branch of my coursework, before I decided to slash the number of levels, due to my write-up growing massively in size (~700 pages while still unfinished).
+
+In the future, a new branch, `v2`, will be created. I plan to go with my original plan of writing 12 levels (before having cut it down to 4 and then eventually 1). However, this will also feature a complete transpile of the code from Python to C, where I will use SDL instead.
+
 # Core dependencies
 - Python 3.8 and above
 - NumPy
