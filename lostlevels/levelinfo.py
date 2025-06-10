@@ -2,4 +2,4 @@
 the Lost Levels levels."""
 
 NUM_WORLDS  = 1
-NUM_LEVELS  = 4
+NUM_LEVELS  = 2

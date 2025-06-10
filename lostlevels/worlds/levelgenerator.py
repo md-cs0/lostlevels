@@ -66,18 +66,8 @@ class LevelGenerator():
         self.__level.backgroundsecondary.enabled = True
 
     # Generate ground tiles.
-    def generate_ground(self, offset, length = 1, height = 1, use_winter = True, draw = True, spiked = False):
-        # If this is any other biome, just use the first entry tile.
-        if self.__biome != "winter" and use_winter:
-            return self.__generate_tiles("tile", 0, offset, length, height, draw, spiked)
-        
-        # The top layer must use the 20th entry tile. Underground tiles can use
-        # the same entry as before.
-        ents = self.__generate_tiles("tile", 19, offset, length, 1, draw, spiked)
-        if height > 1:
-            ents.extend(self.__generate_tiles(
-                "tile", 0, offset + pygame.math.Vector2(0, -32), length, height - 1), draw, spiked)
-        return ents
+    def generate_ground(self, offset, length = 1, height = 1, draw = True, spiked = False):
+        return self.__generate_tiles("tile", 0, offset, length, height, draw, spiked)
     
     # Generate destructible blocks.
     def generate_destructible(self, offset, length = 1, height = 1, draw = True, spiked = False):

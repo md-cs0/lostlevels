@@ -56,7 +56,7 @@ class LoadingLevel(engine.Game):
     def levelselected(self):
         # Validate the level number selected.
         level = self.input.get_text().strip()
-        if not level.isnumeric() or not (1 <= (level := int(level)) <= 4):
+        if not level.isnumeric() or not (1 <= (level := int(level)) <= 2):
             self.help.set_text(f"THIS LEVEL NUMBER IS INVALID!\nPLEASE TYPE A LEVEL NUMBER FROM" \
                                f" 1-{levelinfo.NUM_LEVELS}")
             self._engine.create_timer(lambda: self._engine.focus_text(self.input), 0)
