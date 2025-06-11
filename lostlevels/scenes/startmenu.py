@@ -28,11 +28,10 @@ class StartMenu(engine.Game):
         # Register SaveText as an engine element type.
         self._engine.register_ui_classname("savetext", SaveText)
 
-        # Create the background, which will just be a blue sky,
-        # for now.
-        self.sky = self._engine.create_ui_element_by_class("frame", engine.ui.LAYER_BACKGROUND)
-        self.sky.set_colour(pygame.Color(135, 205, 255))
-        self.sky.set_size(engine.ui.UDim2(1, 0, 1, 0))
+        # Create the background.
+        self.sky = self._engine.create_ui_element_by_class("image", engine.ui.LAYER_BACKGROUND)
+        self.sky.load("lostlevels/assets/biomes/overground/background.png")
+        self.sky.set_size(engine.ui.UDim2(1, 0, 1, 0), False)
         self.sky.enabled = True
 
         # Load the introduction text.
@@ -229,8 +228,12 @@ class StartMenu(engine.Game):
         # Return back to the main menu if ESC was pressed and we are in the 
         # load save page.
         elif enum == pygame.K_ESCAPE: # Modified condition so that it only checks for ESC input.
+            # Check if we are in the help page.
+            if self.help_page.enabled:
+                self.input_help()
+
             # Are we in the load save page?
-            if self.loadsave_help.enabled == True:
+            elif self.loadsave_help.enabled == True:
                 # Delete all the save buttons and disable the load save helper 
                 # dialogue.
                 self.loadsave_help.enabled = False

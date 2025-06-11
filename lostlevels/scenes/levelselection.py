@@ -66,7 +66,7 @@ class LevelSelection(engine.Game):
             # Create the portal themselves.
             portal = self._engine.create_entity_by_class("worldportal")
             portal.movetype = engine.entity.MOVETYPE_NONE
-            portal.load("lostlevels/assets/temp.png", (128, 128), i)
+            portal.load("lostlevels/assets/world_portals.png", (128, 128), i)
             portal.set_hitbox(pygame.math.Vector2(128, 200))
             portal.set_baseorigin(pygame.math.Vector2(32 + i * 192, -159))
             portal.world = i + 1

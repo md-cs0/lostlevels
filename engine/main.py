@@ -171,6 +171,7 @@ class LLEngine():
         # Create a new screen for the window, and a background surface, which everything will be
         # blit onto.
         screen = pygame.display.set_mode((self.width.get(), self.height.get()), pygame.RESIZABLE)
+        pygame.display.set_caption(self.__name)
         background = pygame.Surface((self.game_width.get(), self.game_height.get()))
 
         # Main game loop: run the user-defined per-frame game code each frame.

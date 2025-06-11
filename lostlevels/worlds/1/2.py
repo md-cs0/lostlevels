@@ -140,7 +140,7 @@ def boulder_hit(self, other, coltype, coldir):
 
 # Return a path to the image preview of this level.
 def get_preview():
-    return "engine/assets/missing.png"
+    return "lostlevels/assets/levels/1_2_preview.png"
 
 # Generate the level data for this level.
 def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section):
