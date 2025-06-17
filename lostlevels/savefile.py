@@ -37,7 +37,7 @@ class LLSV():
     def __init__(self, name):
         self.name = name
         self.header = LLSVHeader()
-        self.currentlevel = [1]
+        self.currentlevel = [1] * levelinfo.NUM_WORLDS
     
     # Read from an existing save file.
     def read(self, savedir = ""):
