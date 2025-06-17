@@ -10,15 +10,20 @@ LLSV_OK         = 0 # Save file instantiated successfully.
 LLSV_NOTEXISTS  = 1 # The save file path is invalid.
 LLSV_MAGIC      = 2 # The magic of the save file is wrong.
 LLSV_CORRUPT    = 3 # Save file data is corrupted due to missing data.
+LLSV_WRONGVER   = 4 # The given save file version number does not match what the game expects.
 
 # LLSV magic.
 LLSV_MAGIC      = 0x56534C4C # LLSV
+
+# Current LLSV save file version number.
+LLSV_SAVEVER    = 1
 
 # LLSV header.
 class LLSVHeader(ctypes.Structure):
     # Declare the fields.
     _fields_ = [("m_iMagic", ctypes.c_int),
-                ("m_au8Flags", ctypes.c_ubyte * 16),
+                ("m_u8Version", ctypes.c_ubyte),
+                ("m_au8Flags", ctypes.c_ubyte * 15),
                 ("m_sLives", ctypes.c_short),
                 ("m_sCoins", ctypes.c_short),
                 ("m_uScore", ctypes.c_uint),
@@ -29,6 +34,7 @@ class LLSVHeader(ctypes.Structure):
     def __init__(self):
         self.m_iMagic = LLSV_MAGIC
         self.m_sLives = 3
+        self.m_u8Version = LLSV_SAVEVER
         self.m_u8NumWorlds = levelinfo.NUM_WORLDS
 
 # Save file class.
@@ -55,6 +61,10 @@ class LLSV():
             # Verify the magic.
             if self.header.m_iMagic != LLSV_MAGIC:
                 return LLSV_MAGIC
+            
+            # Verify the version number.
+            if self.header.m_u8Version != LLSV_SAVEVER:
+                return LLSV_WRONGVER
             
             # Read until the number of worlds is reached.
             self.currentlevel = []
