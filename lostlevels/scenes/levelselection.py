@@ -118,6 +118,7 @@ class LevelSelection(engine.Game):
         # Return to the main menu if the ESC key is pressed.
         if enum == pygame.K_ESCAPE:
             self.music.stop()
+            self.__game.save.write("saves")
             self.__game.load_startmenu()
 
         # Forward this event to the player.
