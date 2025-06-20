@@ -23,6 +23,7 @@ class Timer():
         self.func = func
         self.end = end
         self.args = args
+        self.enabled = True
 
 # The top-level engine class.
 class LLEngine():
@@ -245,7 +246,7 @@ class LLEngine():
 
                 # Invoke and clear any expired timers.
                 for timer in self.__timers:
-                    if timer.end < start:
+                    if timer.end < start and timer.enabled:
                         timer.func(*timer.args)
                 self.__timers[:] = [timer for timer in self.__timers if timer.end >= start]
 
@@ -517,7 +518,9 @@ class LLEngine():
     
     # Create a new timer, which will be handled by the engine.
     def create_timer(self, func, length, *args):
-        self.__timers.append(Timer(func, time.perf_counter() + length, *args))
+        timer = Timer(func, time.perf_counter() + length, *args)
+        self.__timers.append(timer)
+        return timer
 
     # Clear all background elements.
     def clear_background_elements(self):
