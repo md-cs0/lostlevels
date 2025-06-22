@@ -438,6 +438,7 @@ class LLEngine():
 
         # Create a new element by the classname.
         newElem = self.__element_types[classname](self, classname)
+        newElem.layer = layer
 
         # Link the entity to the entities linked list.
         newElem.prev = (self.__element_tail if layer == ui.LAYER_FOREGROUND 
@@ -524,11 +525,17 @@ class LLEngine():
 
     # Clear all background elements.
     def clear_background_elements(self):
+        if self.__focused_text and self.__focused_text.layer == ui.LAYER_BACKGROUND:
+            self.__focused_text = None
+            self.__focused_timestamp = -1.0
         self.__background_head = None
         self.__background_tail = None
 
     # Clear all foreground elements.
     def clear_foreground_elements(self):
+        if self.__focused_text and self.__focused_text.layer == ui.LAYER_FOREGROUND:
+            self.__focused_text = None
+            self.__focused_timestamp = -1.0
         self.__element_head = None
         self.__element_tail = None
     
