@@ -8,8 +8,15 @@ class Game():
     def __init__(self, llengine):
         self._engine: main.LLEngine = llengine
 
-    # Called when the engine is being started.
+    # Called when the engine is being started. This is a useful place to initialize
+    # game variables that should otherwise be recognised by the engine's command
+    # line parser.
     def init(self):
+        pass
+
+    # Called after the engine has started, just before the main game loop. Use this
+    # for immediately rendering any UI elements/entities.
+    def post_init(self):
         pass
 
     # Called each frame.

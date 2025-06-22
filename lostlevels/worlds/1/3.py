@@ -71,7 +71,8 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         for i in range(0, 8):
             gen.generate_pipe_body(pygame.math.Vector2(64 + i * 64, -384))
             if i == 0:
-                section, offset = "overground_main", None
+                section = "overground_main"
+                offset = None
             gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), section = section, player_offset = offset)
 
         # Create a wall after the pipes so that the player cannot walk out of the map.

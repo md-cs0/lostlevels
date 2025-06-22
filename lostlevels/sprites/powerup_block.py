@@ -32,7 +32,7 @@ class PowerupBlock(engine.entity.Sprite):
 
     # Set the index of this power-up block.
     def activated(self):
-        self.load(f"lostlevels/assets/biomes/{self.biome}/powerup_box.png", (32, 32), 10)
+        self.load(f"lostlevels/assets/biomes/{self.biome}/powerup_box.png", (32, 32), 6)
         if self.decoy:
             self.index = 5
         else:

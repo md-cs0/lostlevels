@@ -27,33 +27,32 @@ class Tile(entity.Entity):
         self.__texture = engine.missing # Default to the missing texture (although
                                         # it won't be stretched).
 
+    # Pre-load a tilesheet.
+    @staticmethod
+    def preload(path):
+        # Check whether the sheet is already cached.
+        abspath = os.path.abspath(path)
+        if abspath in cached_sheets:
+            return cached_sheets[abspath]
+        
+        # Attempt to load the image.
+        try:
+            cached_sheets[abspath] = pygame.image.load(path).convert_alpha()
+            return cached_sheets[abspath]
+        except pygame.error:
+            return None
+
     # Load from a tile sheet.
     def load(self, path, res, index):
         # Set the size of this tile's hitbox.
         self.set_hitbox(pygame.math.Vector2(*res))
 
-        # Fallback function, should the sheet provided be invalid.
-        def fallback():
-            nonlocal self, path
+        # Call the pre-load function.
+        sheet = Tile.preload(path)
+        if not sheet:
             self._engine.console.warn(f"tile sheet path \"{path}\" is invalid")
             self.__texture = pygame.transform.scale(self._engine.missing, res)
-
-        # Check whether the sheet is already cached.
-        abspath = os.path.abspath(path)
-        if abspath in cached_sheets:
-            sheet = cached_sheets[abspath]
-        else:
-            # Check if the path for the sheet exists.
-            if not os.path.isfile(path):
-                fallback()
-                return
-
-            # Attempt to load the image.
-            try:
-                sheet = cached_sheets[abspath] = pygame.image.load(path).convert_alpha()
-            except pygame.error:
-                fallback()
-                return
+            return
         
         # Calculate the row and column numbers with the index provided.
         column = index % TILES_PER_ROW

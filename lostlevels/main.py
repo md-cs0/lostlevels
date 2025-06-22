@@ -50,14 +50,6 @@ class LostLevels(engine.Game):
         self.__melody.buffer = self.__harmony1.buffer \
             = self.__harmony2.buffer = self.__bass.buffer = square
 
-        # Set Python's RNG's seed to a hardcoded constant which can be changed later by
-        # hitting keys, and play all the created square wave channels.
-        random.seed(4389)
-        self.__tweak_melody()
-        self.__tweak_harmony1()
-        self.__tweak_harmony2()
-        self.__tweak_bass()
-
         # Register all of this game's entity types.
         self._engine.register_classname("player", sprites.Player)
         self._engine.register_classname("powerup_block", sprites.PowerupBlock)
@@ -97,9 +89,20 @@ class LostLevels(engine.Game):
         self._engine.width.set(self._engine.game_width.set(576))
         self._engine.height.set(self._engine.game_height.set(480))
 
-        # Load the start menu.
-        self.__sceneindex = SCENE_STARTMENU
-        self.__scene = scenes.StartMenu(self._engine, self)
+    # Render the pre-loading screen. I want this to run for a single
+    # frame so that the game doesn't just display a blank screen while
+    # all the tile and spritesheets are being loaded into memory.
+    def post_init(self):
+        text = self._engine.create_ui_element_by_class("text")
+        text.load_default(12)
+        text.set_colour(pygame.Color(255, 255, 255))
+        text.set_size(engine.ui.UDim2(0, 100, 0, 20))
+        text.set_position(engine.ui.UDim2(0.5, -50, 0.5, -10))
+        text.set_text(f"LOADING...")
+        text.set_italic(True)
+        text.set_x_align(engine.ui.X_CENTRE)
+        text.set_y_align(engine.ui.Y_CENTRE)
+        text.enabled = True
 
     # Forward all per-frame calls to the scene and manipulate the status
     # bar.
@@ -115,6 +118,70 @@ class LostLevels(engine.Game):
             self.coinsbox.set_text(f"x{self.save.header.m_sCoins}")
         if self.timebox and self.__sceneindex == SCENE_LEVEL:
             self.timebox.set_text(f"TIME\n{self.__scene.time_remaining:.0f}")
+
+        # If this is the 2nd frame, start pre-loading all images to use for this game.
+        # This seems oddly specific, but considering that I would like the pre-loading
+        # screen to render first, this is necessary.
+        if self._engine.globals.frames == 2:
+            # Pre-load all the appropriate tilesheets for this game.
+            engine.entity.Tile.preload("lostlevels/assets/world_portals.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/castle/broken.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/castle/main.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/desert/broken.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/desert/main.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/overground/broken.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/overground/main.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/underground/broken.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/underground/main.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/winter/broken.png")
+            engine.entity.Tile.preload("lostlevels/assets/biomes/winter/main.png")
+
+            # Pre-load all the appropriate spritesheets for this game.
+            engine.entity.Sprite.preload("lostlevels/assets/biomes/castle/powerup_box.png", (32, 32), 5)
+            engine.entity.Sprite.preload("lostlevels/assets/biomes/desert/powerup_box.png", (32, 32), 5)
+            engine.entity.Sprite.preload("lostlevels/assets/biomes/overground/powerup_box.png", (32, 32), 5)
+            engine.entity.Sprite.preload("lostlevels/assets/biomes/underground/powerup_box.png", (32, 32), 5)
+            engine.entity.Sprite.preload("lostlevels/assets/biomes/winter/powerup_box.png", (32, 32), 5)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/big_goomba.png", (160, 130), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/bsod_computer_signs.png", (576, 480), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/checkpoint.png", (41, 79), 2)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/coin_big.png", (32, 32), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/flag.png", (43, 29), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/flagpole.png", (12, 278), 2)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/glitched_powerup.png", (32, 32), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/goomba.png", (32, 26), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/koopa.png", (31, 48), 3)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/monitor.png", (67, 59), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/player_small.png", (24, 58), 12)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/rocket_launcher.png", (32, 14), 1)
+            engine.entity.Sprite.preload("lostlevels/assets/sprites/rocket.png", (9, 4), 1)
+
+            # Pre-load all the appropriate UI image element images for this game.
+            engine.ui.Image.preload("lostlevels/assets/biomes/castle/background.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/desert/background.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/levelselection/background.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/levelselection/coin.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/overground/background.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/underground/background.png")
+            engine.ui.Image.preload("lostlevels/assets/biomes/winter/background.png")
+            engine.ui.Image.preload("lostlevels/assets/levels/1_1_preview.png")
+            engine.ui.Image.preload("lostlevels/assets/levels/1_2_preview.png")
+            engine.ui.Image.preload("lostlevels/assets/sprites/player_small.png")
+            engine.ui.Image.preload("lostlevels/assets/start/lost levels.png")
+
+            # Set Python's RNG's seed to a hardcoded constant which can be changed later by
+            # hitting keys, and play all the created square wave channels.
+            random.seed(4389)
+            self.__tweak_melody()
+            self.__tweak_harmony1()
+            self.__tweak_harmony2()
+            self.__tweak_bass()
+
+            # Load the start menu.
+            self._engine.clear_foreground_elements()
+            self.__sceneindex = SCENE_STARTMENU
+            self.__scene = scenes.StartMenu(self._engine, self)
 
     # Forward all post-physics calls to the scene.
     def post_physics(self):

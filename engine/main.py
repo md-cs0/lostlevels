@@ -175,6 +175,10 @@ class LLEngine():
         pygame.display.set_caption(self.__name)
         background = pygame.Surface((self.game_width.get(), self.game_height.get()))
 
+        # Call the game interface's post_init() method if the game wants to immediately
+        # start rendering something.
+        self.__game.post_init()
+
         # Main game loop: run the user-defined per-frame game code each frame.
         self.globals.fps = self.fps_max.get()
         engine_start = time.perf_counter()
