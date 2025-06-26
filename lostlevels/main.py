@@ -81,9 +81,11 @@ class LostLevels(engine.Game):
         self.checkpoint_player_offset = None
         self.checkpoint_level = None
 
+        # Create a new game variable for whether music is toggled.
+        self.music = self._engine.create_gvar("music", 1, "Play Lost Levels music")
+
     # Tweak the default width and height of this game to 576x480
-    # and fix the game resolution to it. Furthermore, load the
-    # start menu.
+    # and fix the game resolution to it.
     def init(self):
         # Fix the resolution of the game.
         self._engine.width.set(self._engine.game_width.set(576))
@@ -173,10 +175,11 @@ class LostLevels(engine.Game):
             # Set Python's RNG's seed to a hardcoded constant which can be changed later by
             # hitting keys, and play all the created square wave channels.
             random.seed(4389)
-            self.__tweak_melody()
-            self.__tweak_harmony1()
-            self.__tweak_harmony2()
-            self.__tweak_bass()
+            if self.music.get():
+                self.__tweak_melody()
+                self.__tweak_harmony1()
+                self.__tweak_harmony2()
+                self.__tweak_bass()
 
             # Load the start menu.
             self._engine.clear_foreground_elements()

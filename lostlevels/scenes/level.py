@@ -151,7 +151,7 @@ class Level(engine.Game):
 
         # Handle playing the level music, if it exists.
         if (self.audio_main != None and (self.audio_intro == None or not self.audio_intro.playing())
-            and not self.audio_main.playing()):
+            and not self.audio_main.playing() and self.__game.music.get()):
             self.audio_main.play(True)
 
         # Enable the ESC prompt based on whether the ESC key was the last key
@@ -212,7 +212,8 @@ class Level(engine.Game):
         if os.path.isfile(intro_path):
             self.audio_intro = self._engine.create_sound(intro_path)
             self.audio_intro.volume = 1
-            self.audio_intro.play()
+            if self.__game.music.get():
+                self.audio_intro.play()
         
         # Load the main audio.
         self.audio_main = self._engine.create_sound(f"lostlevels/assets/audio/{biome}/main.ogg")

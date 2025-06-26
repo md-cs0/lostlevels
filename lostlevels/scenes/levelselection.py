@@ -35,7 +35,8 @@ class LevelSelection(engine.Game):
         self.music = self._engine.create_sound(
             "lostlevels/assets/audio/levelselection/sma4_world_e_castle.ogg")
         self.music.volume = 1
-        self.music.play(True)
+        if self.__game.music.get():
+            self.music.play(True)
 
         # Create an invisible rectangle for the ground.
         self.ground = self._engine.create_entity_by_class("rect")
