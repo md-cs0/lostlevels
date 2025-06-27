@@ -7,6 +7,10 @@ import engine
 import lostlevels
 from . import Humanoid
 
+# Power-up status.
+POWERUP_NONE        = 0
+POWERUP_DEATHCAP    = 1
+
 # The player class.
 class Player(engine.entity.Sprite, Humanoid):
     # Construct a new player.
@@ -39,6 +43,9 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # Main player status.
         self.can_die = True
+        self.powerup = POWERUP_NONE
+        self.invincible = False
+        self.jump_multiplier = 1
 
         # The level scene object.
         self.level = None
@@ -48,13 +55,15 @@ class Player(engine.entity.Sprite, Humanoid):
         self.block_hit_sound = self._engine.create_sound("lostlevels/assets/audio/player/block_hit.ogg")
         self.jump_sound = self._engine.create_sound("lostlevels/assets/audio/player/jump.ogg")
         self.denied_sound = self._engine.create_sound("lostlevels/assets/audio/player/denied.ogg")
+        self.downgrade_sound = self._engine.create_sound("lostlevels/assets/audio/objects/pipe_enter.ogg")
         self.death_sound.volume = 1
         self.block_hit_sound.volume = 1
         self.jump_sound.volume = 1
+        self.downgrade_sound.volume = 1
 
         # Used for propelling off enemy targets.
         self.add_velocity_y = 0
-        self.jump_multiplier = 1
+        self.enemy_jump_multiplier = 1
 
         # Used for climbing the player.
         self.climbing = False
@@ -142,7 +151,7 @@ class Player(engine.entity.Sprite, Humanoid):
             # and how fast they're moving.
             multiplier = max(min(abs(self.__speedwhenjumping), 150) / 125, 1)
             if self.__jumping + 0.3 > time.perf_counter():
-                self.velocity.y = 350 * multiplier * self.jump_multiplier
+                self.velocity.y = 350 * multiplier * self.enemy_jump_multiplier * self.jump_multiplier
         else:
             self.__jumping = -1
 
@@ -151,7 +160,7 @@ class Player(engine.entity.Sprite, Humanoid):
         if self.groundentity:
             # Reset the jump multiplier.
             if self.add_velocity_y == 0:
-                self.jump_multiplier = 1
+                self.enemy_jump_multiplier = 1
 
             # Set the crouching state.
             if keys[pygame.K_DOWN]:
@@ -248,11 +257,46 @@ class Player(engine.entity.Sprite, Humanoid):
         self.death_sound.play()
         self._engine.console.log("[Lost Levels]: the player has died!")
 
+    # Equip a power-up.
+    def equip_powerup(self, powerup):
+        # Set the player's power-up state.
+        self.powerup = powerup
+
+        # What power-up did the player equip?
+        if self.powerup == POWERUP_DEATHCAP:
+            # Set the player's jump multiplier to something insane.
+            self.jump_multiplier = 4
+
     # Hurt this player. This method should be used instead for downgrading the player or
     # killing the player outright. For always killing the player, see Level::death().
     def hurt(self):
-        # For now, this will just kill the player in all circumstances.
-        self.level.death()
+        # If the player is invincible, exit early.
+        if self.invincible:
+            return
+
+        # If the player has no power-up, kill them.
+        if self.powerup == POWERUP_NONE:
+            self.level.death()
+            return
+
+        # The player did have a power-up. Make them invincible for 3 seconds.
+        self.set_invincible(True)
+        self._engine.create_timer(self.set_invincible, 3, False)
+        self._engine.create_timer(self.__flip_player_draw, 0.1)
+        
+        # What power-up did the player lose?
+        if self.powerup == POWERUP_DEATHCAP:
+            # Reset the player's jump multiplier.
+            self.jump_multiplier = 1
+
+        # Drop the power-up.
+        self.downgrade_sound.repeat()
+        self.powerup = POWERUP_NONE
+    
+    # Set the player's invincibility status.
+    def set_invincible(self, invincible):
+        self.invincible = invincible
+        self.draw = True
 
     # Finish the level by having the player walk to the end while calling the level's
     # Level::finish_level() method.
@@ -269,3 +313,13 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # Call the level's Level::finish_level() method.
         self.level.finish_level()
+
+    # Toggle whether the player is drawn repeatedly while the player is in its invincibile
+    # state after being hit by an enemy target.
+    def __flip_player_draw(self):
+        if self.invincible:
+            self.draw = not self.draw
+            self._engine.create_timer(self.__flip_player_draw, 0.1)
+
+# Define what should be imported from this module.
+__all__ = ["Player", "POWERUP_NONE", "POWERUP_DEATHCAP"]

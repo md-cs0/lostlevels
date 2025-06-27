@@ -18,11 +18,12 @@ class GlitchPowerup(MushroomBase):
         self.load("lostlevels/assets/sprites/glitched_powerup.png", (32, 32), 1)
 
     # Create an error screen and shut down the game.
-    def pickup(self, player):
+    def pickup(self, humanoid):
         # Stop the music and stop the player from being able to move.
         self.level.stop_music()
-        player.moveable = False
-        player.move = 0
+        if humanoid.get_class() == "player":
+            humanoid.moveable = False
+            humanoid.move = 0
 
         # Create the fake error screen.
         error = self._engine.create_ui_element_by_class("image")

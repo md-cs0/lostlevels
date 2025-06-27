@@ -12,6 +12,7 @@ class EnemyBase(Moveable, Humanoid):
         # Call the moveable constructor and modify its default properties.
         Moveable.__init__(self, eng, classname)
         Humanoid.__init__(self)
+        self.get_event("collision").hook(EnemyBase.attempt_player_collision)
         self.get_event("collisionfinal").hook(EnemyBase.player_collide)
 
         # Create new events for hitting the enemy from above and killing the enemy.
@@ -27,6 +28,20 @@ class EnemyBase(Moveable, Humanoid):
         # Bind the level scene instance to this enemy.
         self.level = None
 
+    # If the player is invincible, do not collide with the player.
+    def attempt_player_collision(self, name, returnValue, other, coltype, coldir):
+        # If the other entity is not a player, continue.
+        if other.get_class() != "player":
+            return engine.Event.DETOUR_CONTINUE
+        
+        # If the player is invincible, do not collide.
+        if other.invincible:
+            return (engine.Event.DETOUR_SUPERSEDE, False)
+        
+        # Continue.
+        return engine.Event.DETOUR_CONTINUE
+        
+
     # Handle collision with the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not a player, continue.
@@ -41,7 +56,7 @@ class EnemyBase(Moveable, Humanoid):
         # If the player hit this enemy from above, invoke the player_hit event.
         if engine.entity.is_collision_above(coltype, coldir):
             other.add_velocity_y = 400
-            other.jump_multiplier = 1.2
+            other.enemy_jump_multiplier = 1.2
             self.invoke_event("player_hit", other)
             return engine.Event.DETOUR_CONTINUE
 

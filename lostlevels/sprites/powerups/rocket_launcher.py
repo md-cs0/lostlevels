@@ -24,16 +24,16 @@ class RocketLauncher(MushroomBase):
         self.equipped = False
 
     # Pick up the rocket launcher.
-    def pickup(self, other):
+    def pickup(self, humanoid):
         # Pick up the weapon.
         self.powerup_sound.play()
         self.movetype = engine.entity.MOVETYPE_NONE
-        self.equipped = other
-        other.weapon = self
+        self.equipped = humanoid
+        humanoid.weapon = self
 
         # If the new owner of the weapon is an enemy target, configure it 
         # for random launch.
-        if not other.get_class() == "player":
+        if not humanoid.get_class() == "player":
             self.fire_random()
 
         # Do not delete the entity.

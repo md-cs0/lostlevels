@@ -44,7 +44,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
     if biome != "overground" and biome != "winter":
         return None
     gen = levelgenerator.LevelGenerator(eng, level, biome)
-    
+
     # Is this the main section?
     if name == "main":
         # Create the level data for this section.
@@ -71,15 +71,43 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         for i in range(0, 8):
             gen.generate_pipe_body(pygame.math.Vector2(64 + i * 64, -384))
             if i == 0:
-                section = "overground_main"
+                new_section = "overground_main"
                 offset = None
-            gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), section = section, player_offset = offset)
+            elif i == 5:
+                new_section = f"{biome}_goombas"
+                offset = None
+            gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), section = new_section, player_offset = offset)
 
         # Create a wall after the pipes so that the player cannot walk out of the map.
         gen.generate_blocks(pygame.math.Vector2(576, 0), height = 15)
 
         # Create a funny cloud that will only be reachable by taking a malicious pipe.
         gen.generate_funny_cloud(pygame.math.Vector2(240, -64), spiked = True)
+
+        # Return the level data generated for this section.
+        return data
+    
+    # Is this the stack of Goombas section?
+    elif name == "goombas":
+        # Create the level data for this section.
+        data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 54, 2)
+
+        # Create a pipe that the player will "fall" out of as they spawn.
+        pipe = gen.generate_pipe_body(pygame.math.Vector2(32, 0), orientation = lostlevels.sprites.PIPE_180)
+        pipe.extend(gen.generate_pipe_top(pygame.math.Vector2(32, -32), lostlevels.sprites.PIPE_180))
+        for piece in pipe:
+            piece.movetype = engine.entity.MOVETYPE_NONE
+
+        # Create a power-up block that will emit a funny mushroom.
+        powerup_block = gen.generate_powerup_block(pygame.math.Vector2(320, -288))
+        gen.insert_powerup(powerup_block[0], "death_cap")
+
+        # Create a stack of Goombas after the power-up block.
+        for i in range(0, 16):
+            gen.generate_goomba(pygame.math.Vector2(736, -384 + i * 26))
 
         # Return the level data generated for this section.
         return data

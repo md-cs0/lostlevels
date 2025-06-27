@@ -108,7 +108,7 @@ class Koopa(EnemyBase):
         # If the player hit this enemy from above, invoke the player_hit event.
         if engine.entity.is_collision_above(coltype, coldir) and other.get_class() == "player":
             other.add_velocity_y = 400
-            other.jump_multiplier = 1.2
+            other.enemy_jump_multiplier = 1.2
             self.invoke_event("player_hit", other)
             return engine.Event.DETOUR_CONTINUE
 
