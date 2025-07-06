@@ -158,6 +158,22 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_pipe_body(pygame.math.Vector2(800, 0))
         gen.generate_pipe_top(pygame.math.Vector2(800, 32), section = f"{biome}_end")
 
+        # Create some bushes.
+        gen.generate_bush(pygame.math.Vector2(160, -384), 4)
+        gen.generate_hill(pygame.math.Vector2(320, -384))
+        gen.generate_bush(pygame.math.Vector2(480, -384), 5)
+        gen.generate_bush(pygame.math.Vector2(736, -384), 3)
+        gen.generate_hill(pygame.math.Vector2(960, -384))
+        gen.generate_bush(pygame.math.Vector2(1152, -384), 3)
+        gen.generate_bush(pygame.math.Vector2(1472, -384), 4)
+        
+        # Create some clouds.
+        gen.generate_cloud(pygame.math.Vector2(128, -128))
+        gen.generate_cloud(pygame.math.Vector2(416, -96), 3)
+        gen.generate_cloud(pygame.math.Vector2(928, -128), 4)
+        gen.generate_cloud(pygame.math.Vector2(1184, -96), 3)
+        gen.generate_cloud(pygame.math.Vector2(1504, -128))
+
         # Return the level data generated for this section.
         return data
     
@@ -195,6 +211,18 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(832, -416), 100, 2)
         gen.generate_blocks(pygame.math.Vector2(832, -384))
         gen.generate_flagpole(pygame.math.Vector2(842, -106))
+
+        # Create some clouds.
+        gen.generate_cloud(pygame.math.Vector2(288, -128))
+        gen.generate_cloud(pygame.math.Vector2(608, -96))
+        gen.generate_cloud(pygame.math.Vector2(896, -128), 4)
+        gen.generate_cloud(pygame.math.Vector2(1184, -96), 3)
+
+        # Disable scrolling beyond the flagpole.
+        level.max_scroll = 560
+
+        # Create a wall beyond the flagpole as well so that the player cannot progress beyond the map.
+        gen.generate_ground(pygame.math.Vector2(1168, 0), height = 15)
 
         # Return the level data generated for this section.
         return data
