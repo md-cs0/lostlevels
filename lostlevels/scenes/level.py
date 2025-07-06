@@ -133,6 +133,12 @@ class Level(engine.Game):
                 if self.time_remaining == 0 and self.player.alive:
                     self.death()
         
+        # Set the camera offset based on the position of the player.
+        player_centre = (576 / 2) - (24 / 2)
+        player_x = self.player.get_absorigin().x
+        if player_x > player_centre:
+            self.camoffset += player_x - player_centre
+
         # Scroll all the entities and the background.
         if not self.finished:
             self.scroll_map()
@@ -150,7 +156,7 @@ class Level(engine.Game):
         # Enable the ESC prompt based on whether the ESC key was the last key
         # pressed, and if it was pressed recently.
         if self.last_keys[-1] == pygame.K_ESCAPE and time.perf_counter() - self.last_key_press < 3:
-            self.esc_prompt.enabled = self.player.alive
+            self.esc_prompt.enabled = self.player.alive and not self.finished
         else:
             self.esc_prompt.enabled = False
 
@@ -159,12 +165,6 @@ class Level(engine.Game):
 
     # Scroll the map.
     def scroll_map(self):
-        # Set the camera offset based on the position of the player.
-        player_centre = (576 / 2) - (24 / 2)
-        player_x = self.player.get_absorigin().x
-        if player_x > player_centre:
-            self.camoffset += player_x - player_centre
-
         # Cap the camera offset based on the defined max scroll variable.
         if self.max_scroll >= 0:
             self.camoffset = min(self.camoffset, self.max_scroll)
@@ -260,7 +260,8 @@ class Level(engine.Game):
         # If the last two keys pressed were ESC keys, return to the level selection
         # map, if the player is alive.
         if (self.last_keys[-1] == pygame.K_ESCAPE and enum == pygame.K_ESCAPE
-            and (time.perf_counter() - self.last_key_press < 3) and self.player.alive):
+            and (time.perf_counter() - self.last_key_press < 3) and self.player.alive
+            and not self.finished):
             self.stop_music()
             self.__game.load_levelselection()
 
