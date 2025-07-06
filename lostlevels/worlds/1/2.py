@@ -73,7 +73,7 @@ class Level12_main(levelgenerator.LevelData):
         boulder.set_hitbox(pygame.math.Vector2(48, 48))
         boulder.set_baseorigin(pygame.math.Vector2(self._level.player.get_baseorigin().x - 288, -368))
         boulder.velocity.x = 1152
-        boulder.get_event("collision").set_func(boulder_hit)
+        boulder.get_event("collision").set_func(sample_hooks.boulder_hit)
 
 # Define the level data for this level's underground section.
 class Level12_underground(levelgenerator.LevelData):
@@ -105,7 +105,7 @@ class Level12_underground(levelgenerator.LevelData):
             self.train.movetype = engine.entity.MOVETYPE_CUSTOM
             self.train.load("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
             self.train.set_baseorigin(pygame.math.Vector2(-6044, -290))
-            self.train.get_event("collision").set_func(boulder_hit)
+            self.train.get_event("collision").set_func(sample_hooks.boulder_hit)
             self._engine.activate_entity(self.train)
             self.train_spawned = True
 
@@ -124,19 +124,6 @@ class Level12_underground(levelgenerator.LevelData):
             if self.train.get_absorigin().x > 576:
                 self._engine.delete_entity(self.train)
                 self.train = None
-
-# If the boulder hits something within the player's viewpoint, destroy it.
-def boulder_hit(self, other, coltype, coldir):
-    # If this is not caused by the boulder itself, continue.
-    if coltype != engine.entity.COLTYPE_COLLIDING:
-        return
-    
-    # If the other entity is not within the player's viewpoint, continue.
-    if other.get_absorigin().x > 576:
-        return
-    
-    # Destroy the entity.
-    self._engine.delete_entity(other)
 
 # Return a path to the image preview of this level.
 def get_preview():
@@ -331,20 +318,11 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_pipe_top(pygame.math.Vector2(1984, -384), section = "underground",
                               player_offset = pygame.math.Vector2(64, -64))
         
-        # Rising platform: increase the velocity per gravity per frame.
-        def platform_per_frame(self):
-            self.velocity.y += self._engine.find_gvar("gravity").get() * self._engine.globals.frametime
-        
-        # Rising platform: upon collision, configure the per_frame event.
-        def platform_collisionfinal(group):
-            for piece in group:
-                piece.get_event("per_frame").set_func(platform_per_frame)
-
         # Create a platform that rises, instead of falls, upon standing on.
         rising_platform = gen.generate_platform(pygame.math.Vector2(2208, -288), 4)
         for piece in rising_platform:
             piece.get_event("collisionfinal").set_func(
-                lambda hit, other, coltype, coldir: platform_collisionfinal(rising_platform))
+                lambda hit, other, coltype, coldir: sample_hooks.rise_on_collide(rising_platform))
             
         # Create the flagpole area.
         gen.generate_ground(pygame.math.Vector2(2528, -416), 100, 2)

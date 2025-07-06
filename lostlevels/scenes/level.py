@@ -7,6 +7,7 @@ import time
 
 from .. import levelinfo
 from ..sprites import Moveable
+from ..sprites import game_flags
 
 # Level scene.
 class Level(engine.Game):
@@ -131,14 +132,6 @@ class Level(engine.Game):
                 self.time_remaining = max(self.time_remaining - self._engine.globals.frametime, 0)
                 if self.time_remaining == 0 and self.player.alive:
                     self.death()
-
-        # Set the camera offset based on the position of the player.
-        player_centre = (576 / 2) - (24 / 2)
-        player_x = self.player.get_absorigin().x
-        if player_x > player_centre:
-            self.camoffset += player_x - player_centre
-            if self.max_scroll >= 0:
-                self.camoffset = min(self.camoffset, self.max_scroll)
         
         # Scroll all the entities and the background.
         if not self.finished:
@@ -166,6 +159,16 @@ class Level(engine.Game):
 
     # Scroll the map.
     def scroll_map(self):
+        # Set the camera offset based on the position of the player.
+        player_centre = (576 / 2) - (24 / 2)
+        player_x = self.player.get_absorigin().x
+        if player_x > player_centre:
+            self.camoffset += player_x - player_centre
+
+        # Cap the camera offset based on the defined max scroll variable.
+        if self.max_scroll >= 0:
+            self.camoffset = min(self.camoffset, self.max_scroll)
+
         # Set the displacement of all entities.
         ent = self._engine.entity_head()
         while ent:
@@ -192,7 +195,7 @@ class Level(engine.Game):
                 ent.set_origindisp(pygame.math.Vector2(-self.camoffset, 0))
 
                 # If this entity has scrolled far enough to the back, delete it.
-                if ent.get_abstopright().x < -576:
+                if ent.get_abstopright().x < -576 and (ent.game_flags & game_flags.DO_NOT_DELETE) == 0:
                     self._engine.delete_entity(ent)
 
             # Go to the next entity.

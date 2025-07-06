@@ -19,6 +19,50 @@ class Level13_main(levelgenerator.LevelData):
         # Play the level music. 
         level.play_music(biome)
 
+# Define the level data for the Goombas section of the level.
+class Level13_goombas(levelgenerator.LevelData):
+    # Create the level data for the Goombas section.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Play the level music. 
+        level.play_music(biome)
+
+         # Manage the train.
+        self.train_spawned = False
+        self.train = None
+
+    # Manage the train.
+    def per_frame(self):
+        # Once the player reaches the trigger point, spawn a 1996 Stock train
+        # that will constantly accelerate, before deleting the train once it
+        # reaches far out of the player's view.
+        if not self.train_spawned and self._level.player.get_baseorigin().x > 1000:
+            # Spawn the 1996 Stock train, as if it came from the previous level.
+            self.train = self._engine.create_entity_by_class("sprite")
+            self.train.movetype = engine.entity.MOVETYPE_CUSTOM
+            self.train.load("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
+            self.train.velocity.x = 1200
+            self.train.game_flags |= lostlevels.sprites.DO_NOT_DELETE
+            self.train.set_baseorigin(pygame.math.Vector2(-7200, -258))
+            self.train.get_event("collision").set_func(sample_hooks.boulder_hit)
+            self._engine.activate_entity(self.train)
+            self.train_spawned = True
+
+            # Play the 1996 Stock sound effect.
+            motors = self._engine.create_sound("lostlevels/assets/audio/objects/1996_stock_rolling.ogg")
+            motors.volume = 1
+            motors.play()
+
+        # If the train has spawned already, accelerate it until it reaches the end of the
+        # scene, before it eventually gets deleted.
+        if self.train_spawned and self.train:
+            # If the train is beyond the player's viewpoint, destroy it.
+            if self.train.get_absorigin().x > 576:
+                self._engine.delete_entity(self.train)
+                self.train = None
+
 # Return a path to the image preview of this level.
 def get_preview():
     return "engine/assets/missing.png"
@@ -90,10 +134,10 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
     # Is this the stack of Goombas section?
     elif name == "goombas":
         # Create the level data for this section.
-        data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
+        data = Level13_goombas(eng, level, pygame.math.Vector2(52, 0), biome)
 
         # Create the ground.
-        gen.generate_ground(pygame.math.Vector2(0, -416), 54, 2)
+        gen.generate_ground(pygame.math.Vector2(0, -416), 60, 2)
 
         # Create a pipe that the player will "fall" out of as they spawn.
         pipe = gen.generate_pipe_body(pygame.math.Vector2(32, 0), orientation = lostlevels.sprites.PIPE_180)
@@ -109,5 +153,51 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         for i in range(0, 16):
             gen.generate_goomba(pygame.math.Vector2(736, -384 + i * 26))
 
+        # Create a levitating platform with some pipe to the next section above the Goombas.
+        gen.generate_ground(pygame.math.Vector2(800, -32), 2)
+        gen.generate_pipe_body(pygame.math.Vector2(800, 0))
+        gen.generate_pipe_top(pygame.math.Vector2(800, 32), section = f"{biome}_end")
+
         # Return the level data generated for this section.
         return data
+    
+    # Is this the end-of-level selection?
+    elif name == "end":
+        # Create the level data for this section.
+        data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 15, 2)
+
+        # Create a pipe that will take the player into the troll cloud in the first section.
+        gen.generate_pipe_body(pygame.math.Vector2(288, -384))
+        gen.generate_pipe_top(pygame.math.Vector2(288, -352), 
+                              section = f"{biome}_main", 
+                              player_offset = pygame.math.Vector2(272, 64))
+        
+        # Create a platform that will fall down before the player even reaches it.
+        falling_platform = gen.generate_platform(pygame.math.Vector2(512, -416), 4)
+        def platform_fall():
+            if (level.player.get_baseorigin().x > 480 
+                and falling_platform[0].movetype == engine.entity.MOVETYPE_CUSTOM):
+                for ent in falling_platform:
+                    ent.movetype = engine.entity.MOVETYPE_PHYSICS
+        for ent in falling_platform:
+            ent.get_event("per_frame").set_func(lambda self: platform_fall())
+
+        # Create another platform that will levitate upwards when the player stands on it.
+        rising_platform = gen.generate_platform(pygame.math.Vector2(672, -416), 4)
+        for ent in rising_platform:
+            ent.get_event("collisionfinal").set_func(
+                lambda hit, other, coltype, coldir: sample_hooks.rise_on_collide(rising_platform))
+        
+        # Create the final piece of ground with the flagpole.
+        gen.generate_ground(pygame.math.Vector2(832, -416), 100, 2)
+        gen.generate_blocks(pygame.math.Vector2(832, -384))
+        gen.generate_flagpole(pygame.math.Vector2(842, -106))
+
+        # Return the level data generated for this section.
+        return data
+    
+    # Invalid section?
+    return None
