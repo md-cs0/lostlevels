@@ -34,8 +34,9 @@ class EnemyBase(Moveable, Humanoid):
         if other.get_class() != "player":
             return engine.Event.DETOUR_CONTINUE
         
-        # If the player is invincible, do not collide.
-        if other.invincible:
+        # If the player is invincible and isn't colliding from the top, 
+        # do not collide.
+        if other.invincible and not engine.entity.is_collision_above(coltype, coldir):
             return (engine.Event.DETOUR_SUPERSEDE, False)
         
         # Continue.
