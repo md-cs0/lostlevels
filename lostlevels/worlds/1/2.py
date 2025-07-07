@@ -282,7 +282,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
 
         # Create the platform and walls for the train that will come out later.
         gen.generate_ground(pygame.math.Vector2(320, -448), 55)
-        data.wall = gen.generate_ground(pygame.math.Vector2(320, -288), length = 19, height = 5)
+        data.wall = gen.generate_ground(pygame.math.Vector2(320, -288), 19, 5)
         for block in data.wall:
             block.movetype = engine.entity.MOVETYPE_NONE
         gen.generate_void(pygame.math.Vector2(928, -288), length = 5, height = 5)
@@ -303,7 +303,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(1440, -256), 20)
 
         # Create another falling platform on the other side.
-        falling_platform_for_use = gen.generate_ground(pygame.math.Vector2(1344, -256), length = 3)
+        falling_platform_for_use = gen.generate_ground(pygame.math.Vector2(1344, -256), 3)
         for ground in falling_platform_for_use:
             ground.velocity.y = 200
             ground.get_event("collisionfinal").set_func(
