@@ -240,11 +240,13 @@ class Level(engine.Game):
 
         # Kill the player, stop playing music and decrement the lives counter.
         self.player.kill()
+        self.leveldata.player_killed()
         self.stop_music()
         self.get_save().header.m_sLives -= 1
 
         # Create a timer that will call the function for loading the laoding level scene
         # in 4 seconds.
+        self._engine.create_timer(self.leveldata.level_finish, 4)
         self._engine.create_timer(self.__game.load_world, 4, self.__game.world)
 
     # Handle any additional user inputs.
@@ -293,6 +295,7 @@ class Level(engine.Game):
         self._engine.create_timer(self.handle_timer_score, 1 / 30)
 
         # Handle whether a new level should be started after this level or not.
+        self._engine.create_timer(self.leveldata.level_finish, 8)
         if self.get_save().currentlevel[self.__game.world - 1] >= levelinfo.NUM_LEVELS:
             self.get_save().currentlevel[self.__game.world - 1] = levelinfo.NUM_LEVELS + 1
             self._engine.create_timer(self.__game.load_levelselection, 8)

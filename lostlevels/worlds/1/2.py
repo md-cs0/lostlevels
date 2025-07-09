@@ -73,7 +73,8 @@ class Level12_main(levelgenerator.LevelData):
         boulder.set_hitbox(pygame.math.Vector2(48, 48))
         boulder.set_baseorigin(pygame.math.Vector2(self._level.player.get_baseorigin().x - 288, -368))
         boulder.velocity.x = 1152
-        boulder.get_event("collision").set_func(sample_hooks.boulder_hit)
+        boulder.get_event("collision").set_func(lambda ent, other, coltype, coldir:
+                                                sample_hooks.boulder_hit(ent, other, coltype))
 
 # Define the level data for this level's underground section.
 class Level12_underground(levelgenerator.LevelData):
@@ -105,7 +106,8 @@ class Level12_underground(levelgenerator.LevelData):
             self.train.movetype = engine.entity.MOVETYPE_CUSTOM
             self.train.load("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
             self.train.set_baseorigin(pygame.math.Vector2(-6044, -290))
-            self.train.get_event("collision").set_func(sample_hooks.boulder_hit)
+            self.train.get_event("collision").set_func(lambda ent, other, coltype, coldir:
+                                                       sample_hooks.boulder_hit(ent, other, coltype))
             self._engine.activate_entity(self.train)
             self.train_spawned = True
 

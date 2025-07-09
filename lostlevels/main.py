@@ -65,6 +65,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("enemy_base", sprites.enemies.EnemyBase)
         self._engine.register_classname("goomba", sprites.enemies.Goomba)
         self._engine.register_classname("koopa", sprites.enemies.Koopa)
+        self._engine.register_classname("dr_house", sprites.enemies.DrHouse)
 
         # Declare all the status bar's elements.
         self.scorebox = None

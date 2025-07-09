@@ -15,7 +15,7 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Pygame
 
 # Credits
-- Super Mario Advance for the overground theme and some tiles for world 1-3
+- Super Mario Advance for some soundtracks and some tiles for world 1-3
 - Super Mario Advance 4 for some soundtracks and SFX
 - Syobon no Action for the Goomba design
 - Nintendo GameCube for SFX

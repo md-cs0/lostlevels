@@ -2,6 +2,7 @@
 
 import pygame
 import engine
+
 from .. import Moveable
 from .. import Humanoid
 
@@ -24,6 +25,9 @@ class EnemyBase(Moveable, Humanoid):
         self.stomp = self._engine.create_sound("lostlevels/assets/audio/player/enemy_stomp.ogg")
         self.kick.volume = 1
         self.stomp.volume = 1
+
+        # Create some base properties for the enemy base.
+        self.can_stomp = True
 
         # Bind the level scene instance to this enemy.
         self.level = None
@@ -50,7 +54,7 @@ class EnemyBase(Moveable, Humanoid):
             return engine.Event.DETOUR_CONTINUE
         
         # If this enemy hit the player on the side, hurt the player.
-        if coldir == engine.entity.COLDIR_LEFT or coldir == engine.entity.COLDIR_RIGHT:
+        if coldir == engine.entity.COLDIR_LEFT or coldir == engine.entity.COLDIR_RIGHT or not self.can_stomp:
             other.hurt()
             return engine.Event.DETOUR_CONTINUE
         

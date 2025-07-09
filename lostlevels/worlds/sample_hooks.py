@@ -5,7 +5,7 @@ import lostlevels
 """A bunch of sample functions that may be re-used for groups of elements."""
 
 # collision: destroy objects hit by this entity.
-def boulder_hit(self, other, coltype, coldir):
+def boulder_hit(self, other, coltype):
     # If this is not caused by the boulder itself, continue.
     if coltype != engine.entity.COLTYPE_COLLIDING:
         return

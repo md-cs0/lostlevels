@@ -549,6 +549,7 @@ class LLEngine():
         ent = self.__entity_head
         while ent:
             ent.gridhashes = dict()
+            ent.deleted = True
             ent = ent.next
 
         # Reset the physics engine and this engine's entity list.

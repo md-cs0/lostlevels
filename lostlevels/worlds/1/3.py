@@ -19,6 +19,79 @@ class Level13_main(levelgenerator.LevelData):
         # Play the level music. 
         level.play_music(biome)
 
+# Define the level data for the boss fight section of the level.
+class Level13_bossfight(levelgenerator.LevelData):
+    # Create the level data for the Goombas section.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Do not play the level music. Play the Super Mario Advance 4 Bowser fight
+        # music to start with.
+        self.boss_music = eng.create_sound("lostlevels/assets/audio/sma4_boss_fight.ogg")
+        self.boss_music.volume = 1
+        if eng.find_gvar("music").get():
+            self.boss_music.play(True)
+
+        # Bind the boss entity to this level data instance.
+        self.boss = None
+        self.boss_killed = False
+
+        # Bind the end-of-map wall to this level data instance.
+        self.wall = None
+
+        # Manage the boxing glove entity.
+        self.boxing_glove = None
+
+    # Stop playing the boss music when the player dies.
+    def player_killed(self):
+        self.boss_music.stop()
+
+    # Manage certain obstacles.
+    def per_frame(self):
+        # Check for when the boss dies in order to decide when to start playing the actual level music.
+        if self.boss.deleted and not self.boss_killed and self._level.player.alive:
+            # Stop playing boss music.
+            self.boss_killed = True
+            self.boss_music.stop()
+            self._level.play_music(self.biome)
+
+            # Remove the map scrolling limit.
+            self._level.max_scroll = -1
+            for ent in self.wall:
+                self._engine.delete_entity(ent)
+
+        # When the player proceeds from the boss fight, send a boxing glove that will punch the player
+        # into the void.
+        if not self.boxing_glove and self._level.player.get_baseorigin().x > 800:
+            # Create the boxing glove.
+            self.boxing_glove = self._engine.create_entity_by_class("sprite")
+            self.boxing_glove.load("lostlevels/assets/sprites/boxing_glove.png", (180, 100), 1)
+            self.boxing_glove.movetype = engine.entity.MOVETYPE_CUSTOM
+            self.boxing_glove.velocity.x = 1000
+            self.boxing_glove.set_baseorigin(pygame.math.Vector2(620, self._level.player.get_centre().y))
+
+            # Create the collision function for the glove.
+            def glove_collisionfinal(ent, other, coltype, coldir):
+                # If this is not the glove colliding, continue.
+                if coltype != engine.entity.COLTYPE_COLLIDING:
+                    return
+                
+                # If the other entity is not the player, continue.
+                if other.get_class() != "player":
+                    return
+                
+                # Punch whatever the entity has been hit out of orbit.
+                other.velocity = pygame.math.Vector2(ent.velocity.x, other.velocity.y + 450)
+                ent.velocity.x = 0
+
+                # Play a punching sound effect.
+                punch = ent._engine.create_sound("lostlevels/assets/audio/objects/punch.ogg")
+                punch.volume = 1
+                punch.play()
+
+            self.boxing_glove.get_event("collisionfinal").set_func(glove_collisionfinal)
+
 # Define the level data for the Goombas section of the level.
 class Level13_goombas(levelgenerator.LevelData):
     # Create the level data for the Goombas section.
@@ -46,7 +119,8 @@ class Level13_goombas(levelgenerator.LevelData):
             self.train.velocity.x = 1200
             self.train.game_flags |= lostlevels.sprites.DO_NOT_DELETE
             self.train.set_baseorigin(pygame.math.Vector2(-7200, -258))
-            self.train.get_event("collision").set_func(sample_hooks.boulder_hit)
+            self.train.get_event("collision").set_func(lambda ent, other, coltype, coldir:
+                                                       sample_hooks.boulder_hit(ent, other, coltype))
             self._engine.activate_entity(self.train)
             self.train_spawned = True
 
@@ -108,18 +182,21 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         gen.generate_ground(pygame.math.Vector2(64, -416), 16, 2)
 
         # Create an array of 8 pipes that are all usable.
+        pipe_sections = [
+            ("overground_main", None),
+            ("overground_smb2", None),
+            (f"{biome}_bossfight", None),
+            ("overground_smb2", None),
+            ("overground_smb2", None),
+            (f"{biome}_goombas", None),
+            (f"{biome}_goombas", None),
+            (f"{biome}_goombas", None)
+        ]
         for i in range(0, 8):
             gen.generate_pipe_body(pygame.math.Vector2(64 + i * 64, -384))
-            if i == 0:
-                new_section = "overground_main"
-                offset = None
-            elif i == 1:
-                new_section = "overground_smb2"
-                offset = None
-            elif i == 5:
-                new_section = f"{biome}_goombas"
-                offset = None
-            gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), section = new_section, player_offset = offset)
+            gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), 
+                                  section = pipe_sections[i][0], 
+                                  player_offset = pipe_sections[i][1])
 
         # Create a wall after the pipes so that the player cannot walk out of the map.
         gen.generate_blocks(pygame.math.Vector2(576, 0), height = 15)
@@ -195,7 +272,8 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
             train.velocity.x = 1200
             train.game_flags |= lostlevels.sprites.DO_NOT_DELETE
             train.set_baseorigin(pygame.math.Vector2(-7600, -258))
-            train.get_event("collision").set_func(sample_hooks.boulder_hit)
+            train.get_event("collision").set_func(lambda ent, other, coltype, coldir:
+                                                  sample_hooks.boulder_hit(ent, other, coltype))
             eng.activate_entity(train)
 
             # Play the 1996 Stock sound effect.
@@ -258,6 +336,35 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
 
         # Set the key's USE function to key_use().
         key.get_event("use").set_func(lambda self: key_use())
+
+        # Return the level data generated for this section.
+        return data
+    
+    # Is this the boss fight setion?
+    elif name == "bossfight":
+        # Create the level data for this section.
+        data = Level13_bossfight(eng, level, pygame.math.Vector2(52, 0), biome)
+
+        # Initially stop the map from scrolling.
+        level.max_scroll = 0
+
+        # Create a pipe that the player will "fall" out of as they spawn.
+        pipe = gen.generate_pipe_body(pygame.math.Vector2(32, 0), orientation = lostlevels.sprites.PIPE_180)
+        pipe.extend(gen.generate_pipe_top(pygame.math.Vector2(32, -32), lostlevels.sprites.PIPE_180))
+        for piece in pipe:
+            piece.movetype = engine.entity.MOVETYPE_NONE
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 40, 2)
+
+        # Create the boss.
+        boss = eng.create_entity_by_class("dr_house")
+        boss.set_baseorigin(pygame.math.Vector2(416, 0))
+        boss.level = level
+        data.boss = boss
+
+        # Create a temporary wall that prevents the player from running from the boss.
+        data.wall = gen.generate_ground(pygame.math.Vector2(576, 0), height = 15)
 
         # Return the level data generated for this section.
         return data

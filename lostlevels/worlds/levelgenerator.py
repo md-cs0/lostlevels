@@ -44,6 +44,14 @@ class LevelData():
     def unpause(self):
         pass
 
+    # Called when the player is killed.
+    def player_killed(self):
+        pass
+
+    # Called when the level ends.
+    def level_finish(self):
+        pass
+
 # The Lost Levels level generator class.
 class LevelGenerator():
     # Create a new level generator.
