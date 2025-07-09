@@ -264,6 +264,7 @@ class Level(engine.Game):
         if (self.last_keys[-1] == pygame.K_ESCAPE and enum == pygame.K_ESCAPE
             and (time.perf_counter() - self.last_key_press < 3) and self.player.alive
             and not self.finished):
+            self.leveldata.level_finish()
             self.stop_music()
             self.__game.load_levelselection()
 

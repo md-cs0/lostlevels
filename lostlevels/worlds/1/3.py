@@ -47,6 +47,10 @@ class Level13_bossfight(levelgenerator.LevelData):
     def player_killed(self):
         self.boss_music.stop()
 
+    # Stop playing the boss music when the level ends.
+    def level_finish(self):
+        self.boss_music.stop()
+
     # Manage certain obstacles.
     def per_frame(self):
         # Check for when the boss dies in order to decide when to start playing the actual level music.
