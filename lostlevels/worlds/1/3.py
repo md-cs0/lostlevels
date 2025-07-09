@@ -69,7 +69,8 @@ class Level13_bossfight(levelgenerator.LevelData):
             self.boxing_glove.load("lostlevels/assets/sprites/boxing_glove.png", (180, 100), 1)
             self.boxing_glove.movetype = engine.entity.MOVETYPE_CUSTOM
             self.boxing_glove.velocity.x = 1000
-            self.boxing_glove.set_baseorigin(pygame.math.Vector2(620, self._level.player.get_centre().y))
+            self.boxing_glove.set_baseorigin(pygame.math.Vector2(620, 
+                                                                 self._level.player.get_baseorigin().y))
 
             # Create the collision function for the glove.
             def glove_collisionfinal(ent, other, coltype, coldir):
@@ -186,17 +187,29 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
             ("overground_main", None),
             ("overground_smb2", None),
             (f"{biome}_bossfight", None),
-            ("overground_smb2", None),
+            ("nowhere", None),
             ("overground_smb2", None),
             (f"{biome}_goombas", None),
             (f"{biome}_goombas", None),
             (f"{biome}_goombas", None)
         ]
         for i in range(0, 8):
+            # Create the pipe for the given index.
             gen.generate_pipe_body(pygame.math.Vector2(64 + i * 64, -384))
-            gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), 
-                                  section = pipe_sections[i][0], 
-                                  player_offset = pipe_sections[i][1])
+            pipe_top = gen.generate_pipe_top(pygame.math.Vector2(64 + i * 64, -352), 
+                                             section = pipe_sections[i][0], 
+                                             player_offset = pipe_sections[i][1])
+            
+            # If this is the 4th pipe, do not have it teleport the player to another section.
+            # Instead, misguide the player by sending them upwards.
+            if i == 3:
+                def pipe_transport(self):
+                    level.player.moveable = False
+                    self._engine.create_timer(lambda: 
+                                              level.player.set_baseorigin(pygame.math.Vector2(52, 1000)),
+                                              0)
+                for ent in pipe_top:
+                    ent.get_event("entered").set_func(pipe_transport)
 
         # Create a wall after the pipes so that the player cannot walk out of the map.
         gen.generate_blocks(pygame.math.Vector2(576, 0), height = 15)

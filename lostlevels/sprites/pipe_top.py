@@ -33,6 +33,8 @@ class PipeTop(engine.entity.Tile):
     # Transport the player to a given section.
     def transport(self):
         # Create a 1.5-second timer for loading the next level section.
+        self.level.player.can_die = False
+        self._engine.delete_entity(self.level.player)
         self._engine.create_timer(self.level.load_newlevel, 1.5, 
                                   self.section, self.offset, self.level.time_remaining - 1.5)
 
@@ -66,8 +68,6 @@ class PipeTop(engine.entity.Tile):
         # while playing the pipe enter sound.
         self.entered = True
         self.pipe_enter_sound.play()
-        self.level.player.can_die = False
-        self._engine.delete_entity(other)
         self.invoke_event("entered")
 
 # Define what should be imported from this module.
