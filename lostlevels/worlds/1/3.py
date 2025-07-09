@@ -207,13 +207,12 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
             # If this is the 4th pipe, do not have it teleport the player to another section.
             # Instead, misguide the player by sending them upwards.
             if i == 3:
-                def pipe_transport(self):
+                def pipe_transport():
                     level.player.moveable = False
-                    self._engine.create_timer(lambda: 
-                                              level.player.set_baseorigin(pygame.math.Vector2(52, 1000)),
-                                              0)
+                    level.player.set_baseorigin(pygame.math.Vector2(52, 200))
+                    level.player.velocity = pygame.math.Vector2(0, 600)
                 for ent in pipe_top:
-                    ent.get_event("entered").set_func(pipe_transport)
+                    ent.get_event("entered").set_func(lambda self: eng.create_timer(pipe_transport, 0))
 
         # Create a wall after the pipes so that the player cannot walk out of the map.
         gen.generate_blocks(pygame.math.Vector2(576, 0), height = 15)
