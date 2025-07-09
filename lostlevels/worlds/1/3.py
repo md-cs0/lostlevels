@@ -316,7 +316,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create a pipe that will take the player into the troll cloud in the first section.
         gen.generate_pipe_body(pygame.math.Vector2(288, -384))
         gen.generate_pipe_top(pygame.math.Vector2(288, -352), section = f"{biome}_main", 
-                              player_offset = pygame.math.Vector2(272, 64))
+                              player_offset = pygame.math.Vector2(272, 32))
         
         # Create the ground.
         gen.generate_ground(pygame.math.Vector2(0, -416), 15, 2)

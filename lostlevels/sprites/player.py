@@ -28,7 +28,8 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # Cache the status of the player jumping.
         self.__jumping = 0
-        self.__speedwhenjumping = 0
+        self.__jumping_speed = 0
+        self.__jumping_vertical_velocity = 0
 
         # Store the timestamp for when the player's animation last changed.
         self.__animtimestamp = 0
@@ -144,14 +145,16 @@ class Player(engine.entity.Sprite, Humanoid):
             if (self.groundentity and self.__jumping == -1 
                 and not (self.groundentity.game_flags & lostlevels.sprites.CANNOT_JUMP)):
                 self.__jumping = time.perf_counter()
-                self.__speedwhenjumping = abs(self.velocity.x)
+                self.__jumping_speed = abs(self.velocity.x)
+                self.__jumping_vertical_velocity = self.groundentity.velocity.y
                 self.jump_sound.repeat()
             
             # Hold the player upwards depending on whether they are holding the X key
             # and how fast they're moving.
-            multiplier = max(min(abs(self.__speedwhenjumping), 150) / 125, 1)
+            multiplier = max(min(abs(self.__jumping_speed), 150) / 125, 1)
             if self.__jumping + 0.3 > time.perf_counter():
-                self.velocity.y = 350 * multiplier * self.enemy_jump_multiplier * self.jump_multiplier
+                self.velocity.y = (350 * multiplier * self.enemy_jump_multiplier * self.jump_multiplier
+                                   + self.__jumping_vertical_velocity)
         else:
             self.__jumping = -1
 

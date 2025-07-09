@@ -143,6 +143,7 @@ class PowerupBlock(engine.entity.Sprite):
         if (not self.fall and self.movetype == engine.entity.MOVETYPE_PHYSICS 
             and origin.y < self.origin_y):
             self.movetype = engine.entity.MOVETYPE_ANCHORED
+            self.velocity.y = 0
             self.set_baseorigin(pygame.math.Vector2(origin.x, self.origin_y))
             self.invoke_event("release_fixed")
             self.released = True

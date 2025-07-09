@@ -50,6 +50,10 @@ class PipeTop(engine.entity.Tile):
         if other.get_class() != "player":
             return
         
+        # If the player has already started teleporting, return.
+        if not self.level.player.can_die:
+            return
+        
         # Confirm whether the player has actually attempted to walk into this pipe.
         keys = self._engine.get_keys_dict()
         if not ((coldir == engine.entity.COLDIR_UP and self.rotation == PIPE_0 and keys[pygame.K_DOWN])
