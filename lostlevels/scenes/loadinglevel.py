@@ -20,6 +20,9 @@ class LoadingLevel(engine.Game):
         self.help = None
         self.input = None
 
+        # Keep track of the level loading timer, in case the player presses ESC.
+        self.level_timer = None
+
         # Do we know which level to play?
         level = self.__game.save.currentlevel[self.__game.world - 1]
         if level <= levelinfo.NUM_LEVELS:
@@ -51,9 +54,6 @@ class LoadingLevel(engine.Game):
             self.input.get_event("focuslost").set_func(lambda elem, enter_hit: self.levelselected())
             self.input.enabled = True
             self._engine.focus_text(self.input)
-
-        # Keep track of the level loading timer, in case the player presses ESC.
-        self.level_timer = None
 
     # A level has been selected by the end-user.
     def levelselected(self):
@@ -141,6 +141,7 @@ class LoadingLevel(engine.Game):
     # Go back to the level selection map upon pressing ESC.
     def keydown(self, enum, unicode, focused):
         if enum == pygame.K_ESCAPE:
+            print(self.level_timer)
             self.__game.load_levelselection()
             if self.level_timer:
                 self.level_timer.enabled = False

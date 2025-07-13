@@ -35,8 +35,13 @@ class PipeTop(engine.entity.Tile):
         # Create a 1.5-second timer for loading the next level section.
         self.level.player.can_die = False
         self._engine.delete_entity(self.level.player)
-        self._engine.create_timer(self.level.load_newlevel, 1.5, 
-                                  self.section, self.offset, self.level.time_remaining - 1.5)
+        self._engine.create_timer(self.load_newsection, 1.5)
+        
+    # Load the new section.
+    def load_newsection(self):
+        if self.deleted:
+            return
+        self.level.load_newlevel(self.section, self.offset, self.level.time_remaining)
 
     # Handle player transportation if the pipe is designed to do such.
     def collisionfinal(self, other, coltype, coldir):
