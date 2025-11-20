@@ -39,8 +39,15 @@ class PipeTop(engine.entity.Tile):
         
     # Load the new section.
     def load_newsection(self):
+        # Check that the pipe entity still exists.
         if self.deleted:
             return
+        
+        # Check that the player is stil alive.
+        if not self.level.player.alive:
+            return
+        
+        # Load the new level section.
         self.level.load_newlevel(self.section, self.offset, self.level.time_remaining)
 
     # Handle player transportation if the pipe is designed to do such.
