@@ -461,19 +461,16 @@ class LLEngine():
         # Return the entity.
         return newElem
     
-    # Delete an element from the engine, thus unlinking it from the element linked list.
+    # Initiate the sequence of deleting a UI element.
     def delete_ui_element(self, elem):
-        if not elem.prev:
-            if elem.layer == ui.LAYER_FOREGROUND:
-                self.__element_head = elem.next
-            else:
-                self.__background_head = elem.next
-        if not elem.next:
-            if elem.layer == ui.LAYER_FOREGROUND:
-                self.__element_tail = elem.prev
-            else:
-                self.__background_tail = elem.prev
-        elem.unlink()
+        # Ignore if this element is already being deleted.
+        if elem.deleted:
+            return
+        
+        # Stop rendering this element and create a timer for deleting it later.
+        elem.enabled = False
+        elem.deleted = True
+        self.create_timer(self.__delete_ui_element, 0, elem)
     
     # Return the first background element instance in the engine.
     def background_head(self):
@@ -604,3 +601,17 @@ class LLEngine():
         if not ent.next:
             self.__entity_tail = ent.prev
         ent.unlink()
+
+    # Delete a UI element from the engine, thus unlinking it from the element linked list.
+    def __delete_ui_element(self, elem):
+        if not elem.prev:
+            if elem.layer == ui.LAYER_FOREGROUND:
+                self.__element_head = elem.next
+            else:
+                self.__background_head = elem.next
+        if not elem.next:
+            if elem.layer == ui.LAYER_FOREGROUND:
+                self.__element_tail = elem.prev
+            else:
+                self.__background_tail = elem.prev
+        elem.unlink()

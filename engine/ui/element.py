@@ -32,6 +32,7 @@ class Element():
         # Engine linked list implementation.
         self.prev = None
         self.next = None
+        self.deleted = False # Set to True after this element is unlinked.
 
     # Get the class name of this element.
     def get_class(self):
