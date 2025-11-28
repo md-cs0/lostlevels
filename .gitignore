@@ -1,6 +1,7 @@
 # Ignore user data for Lost Levels.
 logging/
 saves/*.*
+demos/*.*
 
 # Ignore all Python bytecode files.
 **/__pycache__/

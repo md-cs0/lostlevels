@@ -5,7 +5,9 @@ import time
 import pygame
 import engine
 import lostlevels
+
 from . import Humanoid
+from .. import demofile
 
 # Power-up status.
 POWERUP_NONE        = 0
@@ -21,6 +23,7 @@ class Player(engine.entity.Sprite, Humanoid):
         self.get_event("per_frame").set_func(Player.per_frame)
         self.get_event("collision").set_func(Player.collision)
         self.get_event("collisionfinal").set_func(Player.collisionfinal)
+        self.set_event(engine.Event("demo_disable_jump", Player.demo_disable_jump))
         self.acceleration = 6.5
 
         # Load the player spritesheet.
@@ -30,6 +33,7 @@ class Player(engine.entity.Sprite, Humanoid):
         self.__jumping = 0
         self.__jumping_speed = 0
         self.__jumping_vertical_velocity = 0
+        self.__demo_jump_disabled = False
 
         # Store the timestamp for when the player's animation last changed.
         self.__animtimestamp = 0
@@ -69,6 +73,9 @@ class Player(engine.entity.Sprite, Humanoid):
         # Used for climbing the player.
         self.climbing = False
         self.climb_velocity = 0
+
+        # Name this entity for demo recordings.
+        self.identifier = "player"
 
     # Handle player movement per-frame.
     def per_frame(self):
@@ -128,7 +135,7 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # Accelerate the player in either direction based on which arrow
         # keys are held.
-        keys = self._engine.get_keys_dict()
+        keys = self.level.get_keys_dict()
         self.move = 0
         if keys[pygame.K_LEFT]:
             self.move -= 150
@@ -144,19 +151,33 @@ class Player(engine.entity.Sprite, Humanoid):
             # Set the timestamp where the player started jumping.
             if (self.groundentity and self.__jumping == -1 
                 and not (self.groundentity.game_flags & lostlevels.sprites.CANNOT_JUMP)):
+                self.__demo_jump_disabled = False
                 self.__jumping = time.perf_counter()
                 self.__jumping_speed = abs(self.velocity.x)
                 self.__jumping_vertical_velocity = self.groundentity.velocity.y
                 self.jump_sound.repeat()
-            
+
+            # Decide whether holding X should still propel the player upwards.
+            demo = self.level.get_demo()
+            if (((demo and demo.recording) or not demo) and self.__jumping + 0.3 <= time.perf_counter()
+                and not self.__demo_jump_disabled):
+                self.demo_disable_jump()
+                if demo:
+                    obj = demofile.LLDEEventObject()
+                    obj.m_szEntityName = self.identifier.encode()
+                    obj.m_szEventName = "demo_disable_jump".encode()
+                    obj.m_u64Tick = self._engine.globals.frames - demo.first_tick
+                    demo.enqueue(obj)
+                
             # Hold the player upwards depending on whether they are holding the X key
             # and how fast they're moving.
             multiplier = max(min(abs(self.__jumping_speed), 150) / 125, 1)
-            if self.__jumping + 0.3 > time.perf_counter():
+            if not self.__demo_jump_disabled:
                 self.velocity.y = (350 * multiplier * self.enemy_jump_multiplier * self.jump_multiplier
-                                   + self.__jumping_vertical_velocity)
+                                + self.__jumping_vertical_velocity)
         else:
             self.__jumping = -1
+            self.__demo_jump_disabled = False
 
         # Handle crouching upon pressing the downwards arrow key and set the
         # player's hitbox size.
@@ -211,6 +232,13 @@ class Player(engine.entity.Sprite, Humanoid):
         if (self.velocity.y < -1250 and coltype == engine.entity.COLTYPE_COLLIDING 
             and coldir == engine.entity.COLDIR_UP and self.level):
             self.level.death()
+
+    # In a demo recording, rather than rely on timestamping to decide whether
+    # to prevent the player from maintaining jumping momentum, this function
+    # will be invoked by an event in the demo instead, disabling jumping. This
+    # is to prevent deviations in player movement if a demo stutters.
+    def demo_disable_jump(self):
+        self.__demo_jump_disabled = True
 
     # Used for utilizing entities.
     def keydown(self, enum, unicode, focused):

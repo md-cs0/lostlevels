@@ -19,6 +19,7 @@ class Element():
         self._rect = pygame.Rect(0, 0, 0, 0)
         self._engine = engine
         self.enabled = False
+        self.identifier = ""
 
         # UI element description.
         self.__position = UDim2(0, 0, 0, 0)

@@ -8,8 +8,10 @@ import pygame
 import numpy
 import random 
 import time
+
 from . import scenes
 from . import sprites
+from . import demofile
 
 # Scene enums.
 SCENE_NONE          = -1
@@ -17,6 +19,26 @@ SCENE_STARTMENU     = 0
 SCENE_LEVELSELECT   = 1
 SCENE_LOADINGLEVEL  = 2
 SCENE_LEVEL         = 3
+
+# Proxy key dictionary class used in demo recordings.
+class DemoKeyDict():
+    # Construct the proxy key dictionary class.
+    def __init__(self):
+        self.dictionary = dict()
+
+    # Clear dictionary.
+    def clear(self):
+        self.dictionary.clear()
+
+    # Handle dictionary retrieval.
+    def __getitem__(self, key):
+        if key not in self.dictionary:
+            return False
+        return self.dictionary[key]
+    
+    # Handle dictionary setting.
+    def __setitem__(self, key, value):
+        self.dictionary[key] = value
 
 # Main game interface for Lost Levels.
 class LostLevels(engine.Game):
@@ -29,8 +51,9 @@ class LostLevels(engine.Game):
         self.__scene: engine.Game = None
         self.__sceneindex = -1
 
-        # Store the save file here.
+        # Store any currently loaded files here.
         self.save = None
+        self.demo = None
 
         # Create a 1Hz 1s 4square wave.
         samples = (numpy.arange(engine.Sound.cached_sample_rate * engine.Sound.num_channels) 
@@ -83,8 +106,15 @@ class LostLevels(engine.Game):
         self.checkpoint_player_offset = None
         self.checkpoint_level = None
 
-        # Create a new game variable for whether music is toggled.
+        # Store a dictionary for all held keys, to be used in demo recordings.
+        self.demo_key_dict = DemoKeyDict()
+
+        # Create game variables specific to Lost Levels.
         self.music = self._engine.create_gvar("music", 1, "Play Lost Levels music")
+        self.demogvar = self._engine.create_gvar("demo", 0, 
+                                                 "Enable demo recording and playback "  \
+                                                 "(this forces force_set_frametime to " \
+                                                 "1 to minimize delta time distortions)")
 
     # Tweak the default width and height of this game to 576x480
     # and fix the game resolution to it.
@@ -92,11 +122,12 @@ class LostLevels(engine.Game):
         # Fix the resolution of the game.
         self._engine.width.set(self._engine.game_width.set(576))
         self._engine.height.set(self._engine.game_height.set(480))
-
-    # Render the pre-loading screen. I want this to run for a single
-    # frame so that the game doesn't just display a blank screen while
-    # all the tile and spritesheets are being loaded into memory.
+        
+    # Handle game initialisation after game variables have been passed.
     def post_init(self):
+        # Render the pre-loading screen. I want this to run for a single
+        # frame so that the game doesn't just display a blank screen while
+        # all the tile and spritesheets are being loaded into memory.
         text = self._engine.create_ui_element_by_class("text")
         text.load_default(12)
         text.set_colour(pygame.Color(255, 255, 255))
@@ -108,20 +139,60 @@ class LostLevels(engine.Game):
         text.set_y_align(engine.ui.Y_CENTRE)
         text.enabled = True
 
+        # If demo is 1, force force_set_frametime to 1 as well.
+        if self.demogvar.get():
+            self._engine.force_set_frametime.set(1)
+            if self._engine.fps_max.get() <= 0:
+                self._engine.console.error("\"demo\" is set to 1, however this "        \
+                                           "requires \"fps_max\" to be set to a value " \
+                                           "that is greater than 0!")
+
     # Forward all per-frame calls to the scene and manipulate the status
     # bar.
     def per_frame(self):
+        # If we're playing a demo, forward any user inputs to the keydown/keyup functions.
+        while self.demo and not self.demo.recording:
+            obj = self.demo.peek()
+            if obj and self._engine.globals.frames - self.demo.first_tick >= obj.m_u64Tick:
+                # Dequeue the next demo object.
+                self.demo.dequeue()
+
+                # Is this an input object?
+                if obj.m_eObjectType == demofile.LLDE_OBJECT_INPUT:
+                    if obj.m_bKeyDown:
+                        self.keydown(obj.m_eKey, "", None, True)
+                    else:
+                        self.keyup(obj.m_eKey, "", None, True)
+
+                # Is this an event object?
+                # Maybe consider UI elements in the future.
+                elif obj.m_eObjectType == demofile.LLDE_OBJECT_EVENT:
+                    ent = self._engine.entity_head()
+                    entity_name = obj.m_szEntityName.decode()
+                    while ent:
+                        if ent.identifier == entity_name:
+                            ent.invoke_event(obj.m_szEventName.decode())
+                            break
+                        ent = ent.next
+
+                # Is this a game call object?
+                elif obj.m_eObjectType == demofile.LLDE_OBJECT_GAMECALL:
+                    getattr(self, obj.m_szMethodName.decode())()
+            else:
+                break
+
         # Forward per-frame calls to the scene.
         if self.__scene:
             self.__scene.per_frame()
 
         # If existent, modify the status bar.
-        if self.scorebox:
-            self.scorebox.set_text(f"FREEMAN\n{self.save.header.m_uScore:010d}")
-        if self.coinsbox:
-            self.coinsbox.set_text(f"x{self.save.header.m_sCoins}")
-        if self.timebox and self.__sceneindex == SCENE_LEVEL:
-            self.timebox.set_text(f"TIME\n{self.__scene.time_remaining:.0f}")
+        if self.__sceneindex != SCENE_STARTMENU:
+            if self.scorebox:
+                self.scorebox.set_text(f"FREEMAN\n{self.save.header.m_uScore:010d}")
+            if self.coinsbox:
+                self.coinsbox.set_text(f"x{self.save.header.m_sCoins}")
+            if self.timebox and self.__sceneindex == SCENE_LEVEL:
+                self.timebox.set_text(f"TIME\n{self.__scene.time_remaining:.0f}")
 
         # If this is the 2nd frame, start pre-loading all images to use for this game.
         # This seems oddly specific, but considering that I would like the pre-loading
@@ -195,23 +266,72 @@ class LostLevels(engine.Game):
             self.__scene.post_physics()
 
     # Forward all keydown events to the scene and change the random seed.
-    def keydown(self, enum, unicode, focused):
+    def keydown(self, enum, unicode, focused, force = False):
+        # Are we in demo mode?
+        if self.demo:
+            # If we're recording a demo, create a new demo object to log this
+            # input.
+            if self.demo.recording:
+                obj = demofile.LLDEInputObject()
+                obj.m_eKey = enum
+                obj.m_bKeyDown = True
+                obj.m_u64Tick = self._engine.globals.frames - self.demo.first_tick
+                self.demo.enqueue(obj)
+
+            # If we're playing a demo, hijack all key inputs instead.
+            elif enum != pygame.K_ESCAPE and not force:
+                return
+            
+        # Toggle this key in the demo key dictionary.
+        self.demo_key_dict[enum] = True
+
+        # Forward the key pressed to the current scene.
         if self.__scene:
             self.__scene.keydown(enum, unicode, focused)
         random.seed(time.perf_counter_ns())
 
     # Forward all keyup events to the scene.
-    def keyup(self, enum, unicode, focused):
+    def keyup(self, enum, unicode, focused, force = False):
+        # Are we in demo mode?
+        if self.demo:
+            # If we're recording a demo, create a new demo object to log this
+            # input.
+            if self.demo.recording:
+                obj = demofile.LLDEInputObject()
+                obj.m_eKey = enum
+                obj.m_bKeyDown = False
+                obj.m_u64Tick = self._engine.globals.frames - self.demo.first_tick
+                self.demo.enqueue(obj)
+
+            # If we're playing a demo, hijack all key inputs instead.
+            elif enum != pygame.K_ESCAPE and not force:
+                return
+            
+        # Untoggle this key in the demo key dictionary.
+        self.demo_key_dict[enum] = False
+
+        # Forward the key released to the current scene.
         if self.__scene:
             self.__scene.keyup(enum, unicode, focused)
 
-    # Upon exit, if a save file exists. save it.
+    # Upon exit, save any loaded files.
     def atexit(self, is_exception):
         if self.save:
             self.save.write("saves")
+        self.save_recorded_demo()
+
+    # If a demo is currently being recorded, save it.
+    def save_recorded_demo(self):
+        if self.demo and self.demo.recording:
+            self._engine.console.log(f"[Lost Levels]: saing recorded demo \"{self.demo.name}.dem\"")
+            self.demo.write("demos")
+            self.demo = None
 
     # Load the level selection map upon loading a new save.
     def load_levelselection(self):
+        # If a demo was being recorded, save it.
+        self.save_recorded_demo()
+        
         # Clear all UI elements.
         self._engine.clear_background_elements()
         self._engine.clear_foreground_elements()
@@ -220,12 +340,7 @@ class LostLevels(engine.Game):
         self._engine.clear_entities()
 
         # Stop playing the start menu music.
-        if self.__melody != None:
-            self.__melody.stop()
-            self.__harmony1.stop()
-            self.__harmony2.stop()
-            self.__bass.stop()
-            self.__melody = self.__harmony1 = self.__harmony2 = self.__bass = None
+        self.__mute_start_music()
 
         # Change the scene to the level selection map scene.
         self.checkpoint_time_limit = None
@@ -239,6 +354,11 @@ class LostLevels(engine.Game):
 
     # Load the start menu.
     def load_startmenu(self):
+        # Clear the loaded demo file.
+        if self.demo:
+            self.demo = None
+            self.save = None
+
         # Clear all UI elements.
         self._engine.clear_background_elements()
         self._engine.clear_foreground_elements()
@@ -251,7 +371,17 @@ class LostLevels(engine.Game):
         self.__scene = scenes.StartMenu(self._engine, self)
 
     # Load a new world.
-    def load_world(self, world):
+    def load_world(self, world, level_override = None):
+        # Clear the demo key dictionary.
+        self.demo_key_dict.clear()
+
+        # If a demo was being recorded, save it.
+        self.save_recorded_demo()
+
+        # If a demo is being played, adjust its first tick counter.
+        if self.demo and not self.demo.recording:
+            self.demo.first_tick = self._engine.globals.frames
+
         # Randomly re-generate the score if it is greater than zero.
         if self.save.header.m_uScore > 0:
             self.save.header.m_uScore = int(random.randint(0, 0xFFFFFFFF) * random.random())
@@ -263,12 +393,15 @@ class LostLevels(engine.Game):
         # Clear all entities.
         self._engine.clear_entities()
 
+        # Stop playing the start menu music.
+        self.__mute_start_music()
+
         # Set the new world.
         self.world = world
 
         # Load the next level.
         self.__sceneindex = SCENE_LOADINGLEVEL
-        self.__scene = scenes.LoadingLevel(self._engine, self)
+        self.__scene = scenes.LoadingLevel(self._engine, self, level_override)
     
     # Load a section of the level.
     def load_level(self, section = "main", offset = None, time_remaining = 200, first_time = True):
@@ -289,6 +422,14 @@ class LostLevels(engine.Game):
             self.__scene.stop_music()
         self.__sceneindex = SCENE_LEVEL
         self.__scene = scenes.Level(self._engine, self, section, offset, time_remaining, first_time)
+
+        # If this is the first time and a demo is being recorded, create a demo
+        # game call object rather than rely on timestamping.
+        if first_time and self.demo and self.demo.recording:
+            obj = demofile.LLDEGameCallObject()
+            obj.m_szMethodName = "load_level".encode()
+            obj.m_u64Tick = self._engine.globals.frames - self.demo.first_tick
+            self.demo.enqueue(obj)
 
     # Create the status bar.
     def create_statusbar(self):
@@ -376,3 +517,12 @@ class LostLevels(engine.Game):
             self.__bass.speed = random.randint(150, 375)
             self.__bass.repeat(True)
             self._engine.create_timer(self.__tweak_bass, 0.33)
+
+    # Mute the start menu music.
+    def __mute_start_music(self):
+        if self.__melody != None:
+            self.__melody.stop()
+            self.__harmony1.stop()
+            self.__harmony2.stop()
+            self.__bass.stop()
+            self.__melody = self.__harmony1 = self.__harmony2 = self.__bass = None

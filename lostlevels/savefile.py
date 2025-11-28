@@ -6,14 +6,14 @@ import ctypes
 from . import levelinfo
 
 # Error states. 
-LLSV_OK         = 0 # Save file instantiated successfully.
-LLSV_NOTEXISTS  = 1 # The save file path is invalid.
-LLSV_MAGIC      = 2 # The magic of the save file is wrong.
-LLSV_CORRUPT    = 3 # Save file data is corrupted due to missing data.
-LLSV_WRONGVER   = 4 # The given save file version number does not match what the game expects.
+LLSV_OK         = 0             # Save file instantiated successfully.
+LLSV_NOTEXISTS  = 1             # The save file path is invalid.
+LLSV_MAGIC      = 2             # The magic of the save file is wrong.
+LLSV_CORRUPT    = 3             # Save file data is corrupted due to missing data.
+LLSV_WRONGVER   = 4             # The given save file version number does not match what the game expects.
 
 # LLSV magic.
-LLSV_MAGIC      = 0x56534C4C # LLSV
+LLSV_MAGIC      = 0x56534C4C    # LLSV
 
 # Current LLSV save file version number.
 LLSV_SAVEVER    = 1

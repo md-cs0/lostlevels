@@ -26,6 +26,7 @@ class Entity():
         self.active = False
         self.draw = True
         self.can_use = False
+        self.identifier = ""
 
         # Entity motion.
         self.velocity = pygame.math.Vector2()       # The entity velocity as described by itself.

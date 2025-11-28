@@ -4,7 +4,9 @@ estimates derived from my own imagination."""
 import random
 import pygame
 import engine
+
 from . import MushroomBase
+from ... import demofile
 
 # The rocket launcher class.
 class RocketLauncher(MushroomBase):
@@ -23,6 +25,9 @@ class RocketLauncher(MushroomBase):
         # Has this rocket launcher been equipped by a humanoid?
         self.equipped = False
 
+        # Name this entity for demo recordings.
+        self.identifier = "rocketlauncher"
+
     # Pick up the rocket launcher.
     def pickup(self, humanoid):
         # Pick up the weapon.
@@ -33,7 +38,7 @@ class RocketLauncher(MushroomBase):
 
         # If the new owner of the weapon is an enemy target, configure it 
         # for random launch.
-        if not humanoid.get_class() == "player":
+        if not humanoid.get_class() == "player" and not self.level.is_demo_playing():
             self.fire_random()
 
         # Do not delete the entity.
@@ -82,10 +87,24 @@ class RocketLauncher(MushroomBase):
     # If an enemy is equipping the rocket launcher, invoke RocketLauncher::fire()
     # randomly.
     def fire_random(self):
+        # Don't fire at random if the rocket launcher has been deleted.
         if self.deleted:
             return
+        
+        # Roll a random chance as to whether to fire or not.
         if random.randint(1, 10) == 1:
+            # Fire the rocket launcher.
             self.fire()
+
+            # Create an event object to mark when the rocket launcher was fired.
+            demo = self.level.get_demo()
+            if demo:
+                obj = demofile.LLDEEventObject()
+                obj.m_szEntityName = self.identifier.encode()
+                obj.m_szEventName = "fire".encode()
+                obj.m_u64Tick = self._engine.globals.frames - demo.first_tick
+                demo.enqueue(obj)
+            
         else:
             self._engine.create_timer(self.fire_random, 0.5)
         

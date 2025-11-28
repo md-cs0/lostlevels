@@ -6,6 +6,7 @@ import math
 import engine
 
 from . import EnemyBase
+from ... import demofile
 
 # The Dr. House class.
 class DrHouse(EnemyBase):
@@ -15,12 +16,20 @@ class DrHouse(EnemyBase):
         super().__init__(eng, classname)
         self.speed = 0
         self.can_stomp = False
+        self.set_event(engine.Event("activated", DrHouse.activated))
+        self.set_event(engine.Event("action_move", DrHouse.action_move))
+        self.set_event(engine.Event("action_pounceattack", DrHouse.action_pounceattack))
 
         # Load the Dr. House spritesheet.
         self.load("lostlevels/assets/sprites/dr_house.png", (86, 129), 1)
 
-        # Start invoking the function responsible for handling Dr. House's moves.
-        self._engine.create_timer(self.handle_actions, 0.5)
+        # Name this entity for demo recordings.
+        self.identifier = "lupus"
+        
+    # Start invoking the function responsible for handling Dr. House's moves.
+    def activated(self):
+        if not self.level.is_demo_playing():
+            self._engine.create_timer(self.handle_actions, 0.5)
 
     # Handle Dr. House's moves.
     def handle_actions(self):
@@ -30,11 +39,27 @@ class DrHouse(EnemyBase):
         
         # Choose what Dr. House should do next.
         if self.groundentity:
+            # Randomly select an action.
             choice = random.randint(1, 20)
+            event = ""
             if 15 <= choice < 19:
+                event = "action_move"
                 self.action_move()
             elif choice == 20:
+                event = "action_pounceattack"
                 self.action_pounceattack()
+            
+            # If an action was selected, create a demo event object to mark it.
+            demo = self.level.get_demo()
+            if len(event) > 0 and demo:
+                obj = demofile.LLDEEventObject()
+                obj.m_szEntityName = self.identifier.encode()
+                obj.m_szEventName = event.encode()
+                obj.m_u64Tick = self._engine.globals.frames - demo.first_tick
+                demo.enqueue(obj)
+
+            # If Dr. House pounced, finish here.
+            if event == "action_pounceattack":
                 return
 
         # Call this function again 0.25s later.

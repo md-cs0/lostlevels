@@ -102,6 +102,7 @@ class LevelSelection(engine.Game):
         self.player = self._engine.create_entity_by_class("player")
         self.player.set_baseorigin(pygame.math.Vector2(50, -200))
         self.player.can_jump = False
+        self.player.level = self
         self._engine.activate_entity(self.player)
 
         # Create the USE key dialogue that moves with the player until the player
@@ -127,6 +128,10 @@ class LevelSelection(engine.Game):
 
         # Disable the USE key dialogue.
         self.dialogue.enabled = False
+
+    # Get all held keys.
+    def get_keys_dict(self):
+        return self._engine.get_keys_dict()
 
     # Load a new world.
     def load_world(self, portal, started = False):

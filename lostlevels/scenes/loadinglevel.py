@@ -5,13 +5,15 @@
 import os
 import pygame
 import engine
+import datetime
 
 from .. import levelinfo
+from .. import demofile
 
 # Loading level scene.
 class LoadingLevel(engine.Game):
     # Construct the loading level scene.
-    def __init__(self, eng, game):
+    def __init__(self, eng, game, level_override = None):
         # Initialize the game interface.
         super().__init__(eng)
         self.__game = game
@@ -24,7 +26,9 @@ class LoadingLevel(engine.Game):
         self.level_timer = None
 
         # Do we know which level to play?
-        level = self.__game.save.currentlevel[self.__game.world - 1]
+        level = (level_override 
+                 if level_override
+                 else self.__game.save.currentlevel[self.__game.world - 1])
         if level <= levelinfo.NUM_LEVELS:
             self.__game.level = level
             self.load_level()
@@ -60,7 +64,7 @@ class LoadingLevel(engine.Game):
         # Validate the level number selected.
         level = self.input.get_text().strip()
         if not level.isnumeric() or not (1 <= (level := int(level)) <= levelinfo.NUM_LEVELS):
-            self.help.set_text(f"THIS LEVEL NUMBER IS INVALID!\nPLEASE TYPE A LEVEL NUMBER FROM" \
+            self.help.set_text(f"THIS LEVEL NUMBER IS INVALID!\nPLEASE TYPE A LEVEL NUMBER FROM"    \
                                f" 1-{levelinfo.NUM_LEVELS}")
             self._engine.create_timer(lambda: self._engine.focus_text(self.input), 0)
             return
@@ -135,13 +139,64 @@ class LoadingLevel(engine.Game):
         preview.set_position(engine.ui.UDim2(0.5, -55, 0.5, 39))
         preview.enabled = True
 
+        # Check whether demo mode is turned on.
+        if self.__game.demogvar.get():
+            # Check if a demo is being played.
+            if self.__game.demo and not self.__game.demo.recording:
+                # If the first object in the demo is a checkpoint object, load its
+                # checkpoint data.
+                obj = self.__game.demo.peek()
+                if obj and obj.m_eObjectType == demofile.LLDE_OBJECT_CHECKPOINT:
+                    self.__game.demo.dequeue()
+                    self.__game.checkpoint_time_limit = obj.m_flTimeLimit
+                    self.__game.checkpoint_player_offset = pygame.math.Vector2(
+                        obj.m_flOffsetX, obj.m_flOffsetY)
+
+            # If we're playing in demo mode and a demo is not being played, create 
+            # a new demo that records the player's gameplay.
+            else:
+                # Create the new demo.
+                now = datetime.datetime.now()
+                self.__game.demo = demofile.LLDE(f"{now.strftime("%Y-%m-%d %H-%M-%S")}")
+                self.__game.demo.recording = True
+                self.__game.demo.first_tick = self._engine.globals.frames
+                self.__game.demo.header.m_u8World = self.__game.world
+                self.__game.demo.header.m_u8Level = self.__game.level
+                self.__game.demo.header.m_flMaxFPS = self._engine.fps_max.get()
+                self._engine.console.log(f"[Lost Levels]: recording new demo \"{self.__game.demo.name}.dem\"")
+
+                # Check if checkpoint data should be recorded.
+                if self.__game.checkpoint_player_offset:
+                    obj = demofile.LLDECheckpointObject()
+                    obj.m_flTimeLimit = self.__game.checkpoint_time_limit
+                    obj.m_flOffsetX = self.__game.checkpoint_player_offset.x
+                    obj.m_flOffsetY = self.__game.checkpoint_player_offset.y
+                    self.__game.demo.enqueue(obj)
+
+                # Record any keys that are currently being held.
+                for key in self.__game.demo_key_dict.dictionary:
+                    if self.__game.demo_key_dict[key] == True:
+                        obj = demofile.LLDEInputObject()
+                        obj.m_eKey = key
+                        obj.m_bKeyDown = True
+                        self.__game.demo.enqueue(obj)
+
         # Keep this preview up for 2 seconds before we actually load the level.
-        self.level_timer = self._engine.create_timer(self.__game.load_level, 2)
+        if not self.__game.demo or self.__game.demo.recording:
+            self.level_timer = self._engine.create_timer(self.__game.load_level, 2)
 
     # Go back to the level selection map upon pressing ESC.
     def keydown(self, enum, unicode, focused):
         if enum == pygame.K_ESCAPE:
-            print(self.level_timer)
-            self.__game.load_levelselection()
+            # Disable the level timer.
             if self.level_timer:
                 self.level_timer.enabled = False
+
+            # If we're in a demo recording, return back to the main menu.
+            if self.__game.demo and not self.__game.demo.recording:
+                self.__game.load_startmenu()
+                return
+
+            # If a normal save is loaded, just go back to the level selection
+            # map.
+            self.__game.load_levelselection()

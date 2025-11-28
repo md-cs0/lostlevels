@@ -91,14 +91,18 @@ class Level(engine.Game):
         self.esc_prompt.set_x_align(engine.ui.X_CENTRE)
 
         # Log the relevant information about this level.
-        self._engine.console.log(f"[Lost Levels]: loading section \"{section}\" from world " \
-                                 f"{game.world}-{game.level} at player offset " \
-                                 f"({player_offset.x}, {player_offset.y}) and time limit " \
+        self._engine.console.log(f"[Lost Levels]: loading section \"{section}\" from world "    \
+                                 f"{game.world}-{game.level} at player offset "                 \
+                                 f"({player_offset.x}, {player_offset.y}) and time limit "      \
                                  f"{self.time_remaining:.0f}")
 
     # Get the save from the game object.
     def get_save(self):
         return self.__game.save
+    
+    # Get the demo from the game object.
+    def get_demo(self):
+        return self.__game.demo
     
     # Get the current checkpoint data.
     def get_checkpoint_data(self):
@@ -109,6 +113,10 @@ class Level(engine.Game):
         self.__game.checkpoint_time_limit = self.time_remaining
         self.__game.checkpoint_player_offset = player_offset
         self.__game.checkpoint_level = self.__game.level
+
+    # Is a demo being played?
+    def is_demo_playing(self):
+        return self.__game.demo and not self.__game.demo.recording
     
     # Load a new level section.
     def load_newlevel(self, section, offset, time_remaining):
@@ -247,7 +255,10 @@ class Level(engine.Game):
         # Create a timer that will call the function for loading the laoding level scene
         # in 4 seconds.
         self._engine.create_timer(self.leveldata.level_finish, 4)
-        self._engine.create_timer(self.__game.load_world, 4, self.__game.world)
+        if self.__game.demo and not self.__game.demo.recording:
+            self._engine.create_timer(self.__game.load_startmenu, 4)
+        else:
+            self._engine.create_timer(self.__game.load_world, 4, self.__game.world)
 
     # Handle any additional user inputs.
     def keydown(self, enum, unicode, focused):
@@ -266,7 +277,10 @@ class Level(engine.Game):
             and not self.finished):
             self.leveldata.level_finish()
             self.stop_music()
-            self.__game.load_levelselection()
+            if self.__game.demo and not self.__game.demo.recording:
+                self.__game.load_startmenu()
+            else:
+                self.__game.load_levelselection()
 
         # Buffer the latest input.
         self.last_keys.append(enum)
@@ -275,6 +289,15 @@ class Level(engine.Game):
 
         # Forward this event to the player.
         self.player.keydown(enum, unicode, focused)
+
+    # Get all held keys.
+    def get_keys_dict(self):
+        # Hijack key inputs if in demo mode.
+        if self.__game.demo and not self.__game.demo.recording:
+            return self.__game.demo_key_dict
+
+        # Return the actual engine's held keys dictionary.
+        return self._engine.get_keys_dict()
 
     # Handle the end of the map.
     def finish_level(self):
@@ -297,12 +320,15 @@ class Level(engine.Game):
 
         # Handle whether a new level should be started after this level or not.
         self._engine.create_timer(self.leveldata.level_finish, 8)
-        if self.get_save().currentlevel[self.__game.world - 1] >= levelinfo.NUM_LEVELS:
-            self.get_save().currentlevel[self.__game.world - 1] = levelinfo.NUM_LEVELS + 1
-            self._engine.create_timer(self.__game.load_levelselection, 8)
+        if self.__game.demo and not self.__game.demo.recording:
+            self._engine.create_timer(self.__game.load_startmenu, 8)
         else:
-            self.get_save().currentlevel[self.__game.world - 1] += 1
-            self._engine.create_timer(self.__game.load_world, 8, self.__game.world)
+            if self.get_save().currentlevel[self.__game.world - 1] >= levelinfo.NUM_LEVELS:
+                self.get_save().currentlevel[self.__game.world - 1] = levelinfo.NUM_LEVELS + 1
+                self._engine.create_timer(self.__game.load_levelselection, 8)
+            else:
+                self.get_save().currentlevel[self.__game.world - 1] += 1
+                self._engine.create_timer(self.__game.load_world, 8, self.__game.world)
 
     # Handle transferring the remaining time into score points.
     def handle_timer_score(self):

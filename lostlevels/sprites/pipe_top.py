@@ -69,7 +69,7 @@ class PipeTop(engine.entity.Tile):
             return
         
         # Confirm whether the player has actually attempted to walk into this pipe.
-        keys = self._engine.get_keys_dict()
+        keys = self.level.get_keys_dict()
         if not ((coldir == engine.entity.COLDIR_UP and self.rotation == PIPE_0 and keys[pygame.K_DOWN])
                 or (coldir == engine.entity.COLDIR_DOWN and self.rotation == PIPE_180)
                 or (coldir == engine.entity.COLDIR_LEFT and self.rotation == PIPE_270 and keys[pygame.K_RIGHT])

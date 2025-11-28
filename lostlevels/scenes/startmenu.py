@@ -6,6 +6,7 @@ import time
 import pygame
 import engine
 
+from .. import demofile
 from .. import savefile
 
 # Save text element.
@@ -15,6 +16,14 @@ class SaveText(engine.ui.Text):
         # Call the element constructor and modify its default properties.
         super().__init__(engine, classname)
         self.save = None
+
+# Demo text element.
+class DemoText(engine.ui.Text):
+    # Construct the demo text element.
+    def __init__(self, engine, classname):
+        # Call the element constructor and modify its default properties.
+        super().__init__(engine, classname)
+        self.demo = None
 
 # Start menu scene.
 class StartMenu(engine.Game):
@@ -27,6 +36,7 @@ class StartMenu(engine.Game):
         
         # Register SaveText as an engine element type.
         self._engine.register_ui_classname("savetext", SaveText)
+        self._engine.register_ui_classname("demotext", DemoText)
 
         # Create the background.
         self.sky = self._engine.create_ui_element_by_class("image", engine.ui.LAYER_BACKGROUND)
@@ -62,11 +72,27 @@ class StartMenu(engine.Game):
         self.loadsave.enabled = True
         self.loadsave.get_event("selected").set_func(lambda elem: self.input_loadsave())
 
+        # Create the load demo button, if demo mode is on.
+        self.playdemo = None
+        if self.__game.demogvar.get():
+            self.playdemo = self._engine.create_ui_element_by_class("text")
+            self.playdemo.load_localfont("lostlevels/assets/fonts/nes.ttf")
+            self.playdemo.set_size(engine.ui.UDim2(0, 200, 0, 20))
+            self.playdemo.set_position(engine.ui.UDim2(0.5, -100, 0.5, 40))
+            self.playdemo.set_text("PLAY DEMO")
+            self.playdemo.set_colour(pygame.Color(255, 255, 255))
+            self.playdemo.set_x_align(engine.ui.X_CENTRE)
+            self.playdemo.enabled = True
+            self.playdemo.get_event("selected").set_func(lambda elem: self.input_playdemo())
+
         # Create the help button.
         self.help = self._engine.create_ui_element_by_class("text")
         self.help.load_localfont("lostlevels/assets/fonts/nes.ttf")
         self.help.set_size(engine.ui.UDim2(0, 200, 0, 20))
-        self.help.set_position(engine.ui.UDim2(0.5, -100, 0.5, 40))
+        if self.playdemo:
+            self.help.set_position(engine.ui.UDim2(0.5, -100, 0.5, 60))
+        else:
+            self.help.set_position(engine.ui.UDim2(0.5, -100, 0.5, 40))
         self.help.set_text("HELP!")
         self.help.set_colour(pygame.Color(255, 255, 255))
         self.help.set_x_align(engine.ui.X_CENTRE)
@@ -77,7 +103,10 @@ class StartMenu(engine.Game):
         self.quit = self._engine.create_ui_element_by_class("text")
         self.quit.load_localfont("lostlevels/assets/fonts/nes.ttf")
         self.quit.set_size(engine.ui.UDim2(0, 200, 0, 20))
-        self.quit.set_position(engine.ui.UDim2(0.5, -100, 0.5, 60))
+        if self.playdemo:
+            self.quit.set_position(engine.ui.UDim2(0.5, -100, 0.5, 80))
+        else:
+            self.quit.set_position(engine.ui.UDim2(0.5, -100, 0.5, 60))
         self.quit.set_text("QUIT")
         self.quit.set_colour(pygame.Color(255, 255, 255))
         self.quit.set_x_align(engine.ui.X_CENTRE)
@@ -85,8 +114,7 @@ class StartMenu(engine.Game):
         self.quit.get_event("selected").set_func(lambda elem: self.input_exit())
 
         # Append all the buttons to a list.
-        self.buttons = [self.newsave, self.loadsave, self.help,
-                        self.quit]
+        self.reset_buttons()
         
         # Draw a selector.
         self.selected_index = 0
@@ -100,7 +128,7 @@ class StartMenu(engine.Game):
         self.help_dialogue.load_localfont("lostlevels/assets/fonts/nes.ttf")
         self.help_dialogue.set_size(engine.ui.UDim2(0, 200, 0, 100))
         self.help_dialogue.set_position(engine.ui.UDim2(1, -220, 0.5, -14))
-        self.help_dialogue.set_text("USE THE ARROW\nKEYS AND HIT\nENTER TO" \
+        self.help_dialogue.set_text("USE THE ARROW\nKEYS AND HIT\nENTER TO"         \
                                     " SELECT\nA BUTTON!")
         self.help_dialogue.set_colour(pygame.Color(255, 255, 255))
         self.help_dialogue.set_y_align(engine.ui.Y_CENTRE)
@@ -165,15 +193,27 @@ class StartMenu(engine.Game):
         self.loadsave_help.set_colour(pygame.Color(255, 255, 255))
         self.loadsave_help.set_x_align(engine.ui.X_CENTRE)
 
-        # Create the saves directory if it doesn't currently exist.
+        # Create a helper dialogue for the play demo page.
+        self.playdemo_help =  self._engine.create_ui_element_by_class("text")
+        self.playdemo_help.load_localfont("lostlevels/assets/fonts/nes.ttf")
+        self.playdemo_help.set_size(engine.ui.UDim2(0, 400, 0, 72))
+        self.playdemo_help.set_position(engine.ui.UDim2(0.5, -200, 0.5, 0))
+        self.playdemo_help.set_text("SCROLL UP AND DOWN AND HIT ENTER\nTO PLAY A DEMO.\n\n" \
+                                   "HIT ESC TO GO BACK TO THE\nMAIN MENU.")
+        self.playdemo_help.set_colour(pygame.Color(255, 255, 255))
+        self.playdemo_help.set_x_align(engine.ui.X_CENTRE)
+
+        # Ensure that the demos and saves directories both exist.
         if not os.path.isdir("saves"):
             os.mkdir("saves")
+        if not os.path.isdir("demos"):
+            os.mkdir("demos")
 
     # Per-frame code.
     def per_frame(self):
         # If we are in the load save page, scroll buttons based on the selector's
         # position.
-        if self.loadsave_help.enabled:
+        if self.loadsave_help.enabled or self.playdemo_help.enabled:
             for i, button in enumerate(self.buttons):
                 # Position the button based on where we are in the list.
                 topindex = (self.selected_index // 4) * 4
@@ -185,7 +225,7 @@ class StartMenu(engine.Game):
         
         # Move the selector so that it is aligned with the button
         # currently selected.
-        if self.loadsave_help.enabled:
+        if self.loadsave_help.enabled or self.playdemo_help.enabled:
             self.selector.set_position(self.buttons[self.selected_index].get_position()
                                     - engine.ui.UDim2(0, 20, 0, 0))
         else:
@@ -232,11 +272,11 @@ class StartMenu(engine.Game):
             if self.help_page.enabled:
                 self.input_help()
 
-            # Are we in the load save page?
-            elif self.loadsave_help.enabled == True:
-                # Delete all the save buttons and disable the load save helper 
-                # dialogue.
+            # Are we in the load save or play demo pages?
+            elif self.loadsave_help.enabled or self.playdemo_help.enabled:
+                # Delete all the buttons and disable the helper dialogue.
                 self.loadsave_help.enabled = False
+                self.playdemo_help.enabled = False
                 for button in self.buttons:
                     self._engine.delete_ui_element(button)
             
@@ -256,8 +296,7 @@ class StartMenu(engine.Game):
                 return
             
             # Re-toggle the main menu buttons.
-            self.buttons = [self.newsave, self.loadsave, self.help,
-                        self.quit]
+            self.reset_buttons()
             for button in self.buttons:
                 button.enabled = True
             self.selected_index = 0
@@ -319,6 +358,49 @@ class StartMenu(engine.Game):
 
         # Enable the load save helper dialogue.
         self.loadsave_help.enabled = True
+
+    # Play a demo file.
+    def input_playdemo(self):
+        # Query all the save files in the saves directory.
+        files = [demo for demo in os.listdir("demos") if os.path.isfile(os.path.join("demos", demo))]
+        demos = []
+        for file in files:
+            demo = demofile.LLDE(os.path.splitext(file)[0])
+            if (error := demo.read("demos")):
+                self._engine.console.warn(f"[Lost Levels]: couldn't load demo \"{file}\": {error}")
+            else:
+                demos.append(demo)
+        
+        # If we don't have any demo files, notify the user and return.
+        if len(demos) == 0:
+            self.help_dialogue.set_text("NO DEMO\n"     \
+                                        "RECORDINGS\n"  \
+                                        "FOUND!")
+            self.help_dialogue.enabled = True
+            return
+
+        # Disable all the main menu buttons and help dialogue, and clear the buttons
+        # array.
+        self.help_dialogue.enabled = False
+        for button in self.buttons:
+            button.enabled = False
+        self.buttons = []
+
+        # Fill the buttons array with dynamically-created buttons for each save.
+        for i, demo in enumerate(demos):
+            button = self._engine.create_ui_element_by_class("demotext")
+            button.load_localfont("lostlevels/assets/fonts/nes.ttf")
+            button.set_size(engine.ui.UDim2(0, 350, 0, 20))
+            button.set_text(f"{i + 1} - {demo.name.upper()}")
+            button.set_colour(pygame.Color(255, 255, 255))
+            button.set_x_align(engine.ui.X_CENTRE)
+            button.enabled = True
+            button.demo = demo
+            button.get_event("selected").set_func(lambda elem: self.demo_loaded(elem))
+            self.buttons.append(button)
+
+        # Enable the play demo helper dialogue.
+        self.playdemo_help.enabled = True
                 
     # Toggle the help section.
     def input_help(self):
@@ -376,3 +458,28 @@ class StartMenu(engine.Game):
         self.__game.save = elem.save
         self._engine.console.log(f"[Lost Levels]: loaded save \"{elem.save.name}.sav\"")
         self.__game.load_levelselection()
+
+    # Handle loading a recorded demo file.
+    def demo_loaded(self, elem):
+        # If the loaded demo's desired max FPS does not equal to the current
+        # session's fps_max value, throw an error.
+        if elem.demo.header.m_flMaxFPS != self._engine.fps_max.get():
+            self._engine.console.error(f"Loaded demo \"{elem.demo.name}.dem\" demands a fps_max value of "  \
+                                       f"{elem.demo.header.m_flMaxFPS}, however the current session's "     \
+                                       f"fps_max value is {self._engine.fps_max.get()}!")
+
+        # Load the demo and therefore load the recorded level.
+        self.__game.demo = elem.demo
+        self.__game.save = elem.demo.savecopy
+        self._engine.console.log(f"[Lost Levels]: loaded demo \"{elem.demo.name}.dem\"")
+        self._engine.console.log(F"[Lost Levels]: loaded save \"{elem.demo.savecopy.name}.sav\"")
+        self.__game.load_world(elem.demo.header.m_u8World, elem.demo.header.m_u8Level)
+
+    # Reset the list of buttons.
+    def reset_buttons(self):
+        if self.playdemo:
+            self.buttons = [self.newsave, self.loadsave, self.playdemo, 
+                            self.help, self.quit]
+        else:
+            self.buttons = [self.newsave, self.loadsave, self.help, 
+                            self.quit]

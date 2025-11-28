@@ -166,7 +166,7 @@ class SpatialHashGrid():
 
         # If any invalid hashes were found, write a warning to the console logfile.
         if invalid_hash_count > 0:
-            entity._engine.console.warn(f"[Lost Levels]: entity {id(entity)} had {invalid_hash_count}" \
+            entity._engine.console.warn(f"[Lost Levels]: entity {id(entity)} had {invalid_hash_count}"  \
                                        f" invalid grid hash entries out of {len(entity.gridhashes)}")
 
         # Nullify the entity's grid hashes dictionary.

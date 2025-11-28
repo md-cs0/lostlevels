@@ -51,10 +51,14 @@ class LLEngine():
 
         # Create new engine gvars.
         self.fps_max = self.create_gvar("fps_max", 60.0, 
-                                        "Frame rate limiter. Set to 0 for unlimited FPS.")
+                                        "Frame rate limiter. Set to 0 for unlimited FPS.",
+                                        min = 0.0)
         self.use_self_busywait = self.create_gvar("use_self_busywait", 0,
                                         "Use custom busy-wait code.")
         self.showfps = self.create_gvar("showfps", 0, "Display FPS counter.")
+        self.force_set_frametime = self.create_gvar("force_set_frametime", 0,
+                                                    "Force frametime variable to 1 / fps_max, " \
+                                                    "fps_max != 0")
         
         # Create gvars for the renderer.
         self.width = self.create_gvar("width", 640, "Start-up width of the window.", min=0)
@@ -318,7 +322,10 @@ class LLEngine():
                     if self.fps_max.get() > 0:
                         while (end - start) < (1 / self.fps_max.get()):
                             end = time.perf_counter()
-                self.globals.frametime = end - start
+                if self.force_set_frametime.get() and self.fps_max.get() > 0:
+                    self.globals.frametime = 1 / self.fps_max.get()
+                else:
+                    self.globals.frametime = end - start
                 self.globals.fps = pygame.math.lerp(self.globals.fps,
                                                     1 / self.globals.frametime,
                                                     min(max(self.globals.frametime * 2, 0), 1))
