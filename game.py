@@ -8,7 +8,7 @@ import engine
 import lostlevels
 
 # Set the current working directory.
-os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
  
 # Instantiate and run the engine.
 eng = engine.LLEngine("Lost Levels")
