@@ -372,9 +372,6 @@ class LostLevels(engine.Game):
 
     # Load a new world.
     def load_world(self, world, level_override = None):
-        # Clear the demo key dictionary.
-        self.demo_key_dict.clear()
-
         # If a demo was being recorded, save it.
         self.save_recorded_demo()
 
