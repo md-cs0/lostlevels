@@ -1,5 +1,6 @@
 """World 1-3."""
 
+import random
 import pygame
 import engine
 import lostlevels
@@ -8,6 +9,14 @@ import lostlevels.sprites
 
 from .. import levelgenerator
 from .. import sample_hooks
+from ... import effects
+
+# Manage whether the frames for Coldplay's Higher Power have been preloaded.
+preloaded_coldplay_higher_power = False
+coldplay_higher_power_frame_count = 122
+
+# Suffix to add to the end of the biome name when playing a biome's given music.
+biome_music_suffix = ""
 
 # Define the level data for this level's primary sections.
 class Level13_main(levelgenerator.LevelData):
@@ -17,7 +26,7 @@ class Level13_main(levelgenerator.LevelData):
         super().__init__(eng, level, player_offset, biome)
 
         # Play the level music. 
-        level.play_music(biome)
+        level.play_music(biome + biome_music_suffix)
 
 # Define the level data for the boss fight section of the level.
 class Level13_bossfight(levelgenerator.LevelData):
@@ -58,7 +67,7 @@ class Level13_bossfight(levelgenerator.LevelData):
             # Stop playing boss music.
             self.boss_killed = True
             self.boss_music.stop()
-            self._level.play_music(self.biome)
+            self._level.play_music(self.biome + biome_music_suffix)
 
             # Remove the map scrolling limit.
             self._level.max_scroll = -1
@@ -97,6 +106,161 @@ class Level13_bossfight(levelgenerator.LevelData):
 
             self.boxing_glove.get_event("collisionfinal").set_func(glove_collisionfinal)
 
+# Define the level data for the Coldplay - Higher Power section of the level.
+class Level13_higherpower(levelgenerator.LevelData):
+    # Create the level data for the Coldplay - Higher Power section.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Play the level music to start with. 
+        level.play_music(biome + biome_music_suffix)
+
+        # Create a sound instance for the Coldplay - Higher Power song to play later.
+        self.higher_power_song = eng.create_sound("lostlevels/assets/audio/coldplay_higher_power.ogg")
+        self.higher_power_song.volume = 1
+
+        # Bind the Chris Martin entity to this level data instance.
+        self.chris_martin = None
+        self.higher_power_achieved = False
+
+        # Used to track the furthest point up to which the world exists.
+        self.max_world_x = 1280
+
+        # Keep track of the section's level generator.
+        self.gen = None
+
+        # Manage the music video.
+        self.music_video_frames = []
+        self.music_video_index = -1
+        for i in range(0, coldplay_higher_power_frame_count):
+            frame = eng.create_ui_element_by_class("image")
+            frame.load(f"lostlevels/assets/sprites/coldplay_higher_power/frame-{(i + 1):03d}.png")
+            frame.set_size(engine.ui.UDim2(1, 0, 1, 0))
+            self.music_video_frames.append(frame)
+
+    # Stop playing Coldplay - Higher Power when the player dies.
+    def player_killed(self):
+        self.higher_power_song.stop()
+
+    # Stop playing Coldplay - Higher Power when the level ends.
+    def level_finish(self):
+        self.higher_power_song.stop()
+
+    # Manage Chris Martin.
+    def per_frame(self):
+        # Have we achieved the higher power?
+        if self.higher_power_achieved:
+            # Have Chris Martin carry the player if the player is alive.
+            if self._level.player.alive:
+                self._level.player.set_baseorigin(self.chris_martin.get_baseorigin()
+                                                  + pygame.math.Vector2(-20, 10))
+
+            # Generate more of the world if we are nearing the furthest point up to
+            # which the world currently exists.
+            if self.max_world_x - self._level.player.get_baseorigin().x < 800:
+                # Generate new scenery.
+                self.gen.generate_ground(pygame.math.Vector2(self.max_world_x, -416), 40, 2)
+                if random.randint(0, 2) < 2:
+                    self.gen.generate_cloud(pygame.math.Vector2(
+                                                self.max_world_x + random.randint(0, 320), 
+                                                -96 - random.randint(0, 1) * 32),
+                                            random.randint(2, 10))
+                if random.randint(0, 2) < 2:
+                    self.gen.generate_bush(pygame.math.Vector2(
+                                               self.max_world_x + random.randint(0, 320), 
+                                               -384),
+                                           random.randint(2, 10))
+
+                # Increment the max world x-coordinate value by 576 (32 * 18).
+                self.max_world_x += 576
+        else:
+            # Have Chris Martin look at the player if the higher power has
+            # not been achieved.
+            self.chris_martin.flip(self.chris_martin.get_centre().x - self._level.player.get_centre().x
+                                   > 0)
+
+    # Achieve the higher power.
+    def achieve_higher_power(self):
+        global biome_music_suffix
+
+        # Continue if the higher power has already been achieved.
+        if self.higher_power_achieved:
+            return
+
+        # Enable higher power mode.
+        self.higher_power_achieved = True
+        biome_music_suffix = "_coldplay"
+
+        # Make Chris Martin start sprinting at a very fast speed.
+        self.chris_martin.flip(False)
+        self.chris_martin.move = 5000
+
+        # Disable the player's movement.
+        self._level.player.moveable = False
+        self._level.player.index = 4
+        self._level.player.move = 0
+        self._level.player.velocity = pygame.math.Vector2(0, 0)
+        self._level.player.movetype = engine.entity.MOVETYPE_NONE
+        self._level.player.flip(False)
+
+        # Turn off the current level music and play Coldplay's Higher Power, if
+        # the music gvar is enabled.
+        if self._engine.find_gvar("music").get():
+            self._level.stop_music()
+            self.higher_power_song.play(True)
+
+        # Time the transition point to when we show the actual music video for
+        # Coldplay's Higher Power.
+        self._engine.create_timer(Level13_higherpower.show_higher_power_video, 4.35, self)
+        self._engine.create_timer(Level13_higherpower.kill_player, 9.05, self)
+
+    # Show the music video for Coldplay - Higher Power.
+    def show_higher_power_video(self):
+        # Create a flash bang that gradually fades.
+        effects.create_flash_bang(self._engine, 8)
+
+        # Begin showing the music video.
+        self.increment_higher_power_video_frame()
+
+        # Slow down Chris Martin so that the player observes him leaving the
+        # screen for a longer duration after dying.
+        self.chris_martin.acceleration = 6.5
+        self.chris_martin.move = 750
+        self.chris_martin.velocity = pygame.math.Vector2(0, 0)
+
+    # Increment the music video frame index.
+    def increment_higher_power_video_frame(self):
+        # Conclude if the player has died.
+        if not self._level.player.alive:
+            return
+
+        # Move to the next frame.
+        if self.music_video_index >= 0:
+            self.music_video_frames[self.music_video_index].enabled = False
+        self.music_video_index = (self.music_video_index + 1) % len(self.music_video_frames)
+        self.music_video_frames[self.music_video_index].enabled = True
+        self._engine.create_timer(Level13_higherpower.increment_higher_power_video_frame, 1 / 24, self)
+
+    # Stop showing Coldplay's Higher Power and kill the player.
+    def kill_player(self):
+        # Stop the music video and kill the player.
+        self.music_video_frames[self.music_video_index].enabled = False
+        self.higher_power_song.stop()
+        self._level.death()
+
+        # Put some text making a reference to Coldplay's earlier alt-rock,
+        # A Rush of Blood to the Head.
+        text = self._engine.create_ui_element_by_class("text")
+        text.load_localfont("lostlevels/assets/fonts/nes.ttf")
+        text.set_colour(pygame.Color(255, 255, 255))
+        text.set_size(engine.ui.UDim2(1, 0, 0, 50))
+        text.set_position(engine.ui.UDim2(0, 0, 1, -130))
+        text.set_text(f"BLAME IT UPON A RUSH OF BLOOD TO THE HEAD...")
+        text.set_x_align(engine.ui.X_CENTRE)
+        text.set_y_align(engine.ui.Y_CENTRE)
+        text.enabled = True
+
 # Define the level data for the Goombas section of the level.
 class Level13_goombas(levelgenerator.LevelData):
     # Create the level data for the Goombas section.
@@ -105,7 +269,7 @@ class Level13_goombas(levelgenerator.LevelData):
         super().__init__(eng, level, player_offset, biome)
 
         # Play the level music. 
-        level.play_music(biome)
+        level.play_music(biome + biome_music_suffix)
 
          # Manage the train.
         self.train_spawned = False
@@ -147,13 +311,9 @@ def get_preview():
     return "engine/assets/missing.png"
 
 # Generate the level data for this level.
-def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section):
-    # Currently, the only level data used for this level will be Level13_main.
-    # As one of the pipes will change the biome used for the main section, the
-    # section name must be parsed briefly in order to obtain biome information.
+def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section, first_life):
+    global biome_music_suffix
 
-    # Verify that the grammar of the section name is correct.
-    
     # Extract the biome and section information from the section name. Verify the
     # biome given and create the level generator using the biome's name. If there 
     # is no delimiter, assume that the biome is winter.
@@ -163,6 +323,12 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
     else:
         biome, name = "winter", split[0]
     gen = levelgenerator.LevelGenerator(eng, level, biome)
+
+
+    # If this is the player's first life playing this level, reset the higher
+    # power counter.
+    if first_life:
+        biome_music_suffix = ""
 
     # Is this the main section?
     if name == "main":
@@ -192,7 +358,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
             ("overground_smb2", None),
             (f"{biome}_bossfight", None),
             ("nowhere", None),
-            ("overground_smb2", None),
+            (f"{biome}_higherpower", None),
             (f"{biome}_goombas", None),
             (f"{biome}_goombas", None),
             (f"{biome}_goombas", None)
@@ -213,6 +379,18 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
                     level.player.velocity = pygame.math.Vector2(0, 600)
                 for ent in pipe_top:
                     ent.get_event("entered").set_func(lambda self: eng.create_timer(pipe_transport, 0))
+
+            # If this is the 5th pipe, hook its entered event so that all the frames for the
+            # cropped section of Coldplay's Higher Power music video are preloaded while the 
+            # player enters the pipe.
+            elif i == 4 and not preloaded_coldplay_higher_power:
+                def load_frames():
+                    for i in range(0, coldplay_higher_power_frame_count):
+                        engine.ui.Image.preload(
+                            f"lostlevels/assets/sprites/coldplay_higher_power/frame-{(i + 1):03d}.png")
+                    return engine.Event.DETOUR_CONTINUE
+                for ent in pipe_top:
+                    ent.get_event("entered").hook(lambda self, name, returnValue: load_frames(), True)
 
         # Create a wall after the pipes so that the player cannot walk out of the map.
         gen.generate_blocks(pygame.math.Vector2(576, 0), height = 15)
@@ -381,6 +559,53 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
 
         # Create a temporary wall that prevents the player from running from the boss.
         data.wall = gen.generate_ground(pygame.math.Vector2(576, 0), height = 15)
+
+        # Return the level data generated for this section.
+        return data
+
+    # Is this the Coldplay - Higher Power section?
+    elif name == "higherpower":
+        # Can anybody fly this thing?
+
+        # Create the level data for this section.
+        data = Level13_higherpower(eng, level, pygame.math.Vector2(52, 0), biome)
+
+        # Bind the level generator to the level data object.
+        data.gen = gen
+
+        # Create a pipe that the player will "fall" out of as they spawn.
+        pipe = gen.generate_pipe_body(pygame.math.Vector2(32, 0), orientation = lostlevels.sprites.PIPE_180)
+        pipe.extend(gen.generate_pipe_top(pygame.math.Vector2(32, -32), lostlevels.sprites.PIPE_180))
+        for piece in pipe:
+            piece.movetype = engine.entity.MOVETYPE_NONE
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 40, 2)
+
+        # Create some scenery.
+        gen.generate_bush(pygame.math.Vector2(160, -384), 10)
+        gen.generate_funny_cloud(pygame.math.Vector2(96, -96), spiked = True)
+        gen.generate_cloud(pygame.math.Vector2(288, -64), 5)
+
+        # Create Chris Martin.
+        chris_martin = eng.create_entity_by_class("animated_character")
+        chris_martin.load("lostlevels/assets/sprites/chris_martin.png", (24, 65), 4)
+        chris_martin.set_baseorigin(pygame.math.Vector2(800, -351))
+        chris_martin.acceleration = 1
+        data.chris_martin = chris_martin
+
+        # Chris Martin: achieve higher power if the player interacts with him.
+        def chris_martin_func(self, name, returnValue, other, coltype, coldir):
+            # If the other entity is not a player, continue.
+            if other.get_class() != "player":
+                return engine.Event.DETOUR_CONTINUE
+
+            # Achieve higher power and continue.
+            data.achieve_higher_power()
+            return engine.Event.DETOUR_CONTINUE
+
+        # Hook chris_martin_func() to Chris Martin's collision event.
+        chris_martin.get_event("collision").hook(chris_martin_func)
 
         # Return the level data generated for this section.
         return data

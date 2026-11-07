@@ -22,9 +22,14 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Half-Life for some SFX
 - Apple's Power Macintosh computers for some crash chimes
 - THX for their Deep Note
+- Coldplay for the Higher Power music video
 - [Goatmeal for the NES style font](https://fontstruct.com/fontstructions/show/406653/nintendo_nes_font)
 - [Wikimedia for the 1996 Stock diagram](https://commons.wikimedia.org/wiki/File:1996_Stock_Train_Diagram_(7-car).png)
 
 # Song credits
 - Santo & Johnny - Sleepwalk
 - scizzle - aquatic ambience
+- Coldplay - Higher Power
+- Coldplay - A Rush of Blood to the Head
+- Coldplay - Don't Panic
+- Coldplay - My Universe

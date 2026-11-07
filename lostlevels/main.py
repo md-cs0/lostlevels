@@ -81,6 +81,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("moveable", sprites.Moveable)
         self._engine.register_classname("flagpole", sprites.FlagPole)
         self._engine.register_classname("checkpoint", sprites.Checkpoint)
+        self._engine.register_classname("animated_character", sprites.AnimatedCharacter)
         self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
         self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
         self._engine.register_classname("death_cap", sprites.powerups.DeathCap)

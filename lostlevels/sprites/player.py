@@ -230,7 +230,7 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # If the player landed at an insanely fast speed, kill the player.
         if (self.velocity.y < -1250 and coltype == engine.entity.COLTYPE_COLLIDING 
-            and coldir == engine.entity.COLDIR_UP and self.level):
+            and coldir == engine.entity.COLDIR_UP and self.level) and self.can_die:
             self.level.death()
 
     # In a demo recording, rather than rely on timestamping to decide whether

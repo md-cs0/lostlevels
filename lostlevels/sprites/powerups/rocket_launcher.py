@@ -7,6 +7,7 @@ import engine
 
 from . import MushroomBase
 from ... import demofile
+from ... import effects
 
 # The rocket launcher class.
 class RocketLauncher(MushroomBase):
@@ -116,23 +117,10 @@ def rocket_hit(self, other, coltype, coldir):
     explosion.play()
 
     # Create a flash bang that gradually fades.
-    frame = self._engine.create_ui_element_by_class("frame")
-    frame.set_size(engine.ui.UDim2(1, 0, 1, 0))
-    frame.set_colour(pygame.Color(255, 255, 255, 255))
-    frame.enabled = True
-    self._engine.create_timer(fade_frame, 0.25, frame)
+    effects.create_flash_bang(self._engine)
 
     # Query all entities within a large radius of the rocket and delete them.
     for ent in self._engine.query_entities_in_radius(self.get_centre(), 300):
         self._engine.delete_entity(ent)
     
     # Due to the previous code, this rocket entity should have been deleted already.
-
-# Handle the gradual fading of the flash bang.
-def fade_frame(self):
-    colour = self.get_colour()
-    if colour.a == 0:
-        self._engine.delete_ui_element(self)
-    else:
-        self.set_colour(pygame.Color(255, 255, 255, max(0, colour.a - 3)))
-        self._engine.create_timer(fade_frame, 1 / 20, self)

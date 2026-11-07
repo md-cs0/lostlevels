@@ -46,7 +46,6 @@ class EnemyBase(Moveable, Humanoid):
         # Continue.
         return engine.Event.DETOUR_CONTINUE
         
-
     # Handle collision with the player.
     def player_collide(self, name, returnValue, other, coltype, coldir):
         # If the other entity is not a player, continue.

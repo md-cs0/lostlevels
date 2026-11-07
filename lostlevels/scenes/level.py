@@ -38,7 +38,10 @@ class Level(engine.Game):
         
         # Generate the world by calling the module's load_leveldata() function.
         self.max_scroll = -1
-        self.leveldata = game.levelmodule.load_leveldata(self._engine, self, section)
+        self.leveldata = game.levelmodule.load_leveldata(self._engine, 
+                                                         self, 
+                                                         section,
+                                                         self.__game.checkpoint_level == None)
         if not self.leveldata:
             self._engine.console.error(
                 f"[Lost Levels]: invalid section name \"{section}\" for world {game.world}-{game.level}!")
