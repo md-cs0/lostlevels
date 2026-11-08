@@ -41,7 +41,8 @@ class Level(engine.Game):
         self.leveldata = game.levelmodule.load_leveldata(self._engine, 
                                                          self, 
                                                          section,
-                                                         self.__game.checkpoint_level == None)
+                                                         self.__game.checkpoint_level == None,
+                                                         first_time)
         if not self.leveldata:
             self._engine.console.error(
                 f"[Lost Levels]: invalid section name \"{section}\" for world {game.world}-{game.level}!")

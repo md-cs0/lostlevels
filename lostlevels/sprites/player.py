@@ -264,7 +264,7 @@ class Player(engine.entity.Sprite, Humanoid):
                 continue
             diff = entity.get_centre() - self.get_centre()
             dist = diff.x ** 2 + diff.y ** 2
-            if not closest or dist < closest_dist:
+            if (not closest or dist < closest_dist) and dist < entity.use_dist ** 2:
                 closest = entity
 
         # Invoke the use event of the selected entity, if found.

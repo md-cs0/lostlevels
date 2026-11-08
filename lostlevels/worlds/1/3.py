@@ -19,6 +19,9 @@ coldplay_higher_power_frame_count = 122
 # Suffix to add to the end of the biome name when playing a biome's given music.
 biome_music_suffix = ""
 
+# Store whether the player currently holds a key.
+holding_key = False
+
 # Define the level data for this level's primary sections.
 class Level13_main(levelgenerator.LevelData):
     # Create the level data for the primary sections.
@@ -28,6 +31,30 @@ class Level13_main(levelgenerator.LevelData):
 
         # Play the level music. 
         level.play_music(biome + biome_music_suffix)
+
+# Define the level data for the fake underground section of the level.
+class Level13_fake_underground(levelgenerator.LevelData):
+    # Create the level data for the primary sections.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Play the level music. 
+        level.play_music(biome + biome_music_suffix)
+
+        # Play the Lego Yoda death sound effect until the player dies, by
+        # which point it should abruptly stop for comedic effect.
+        self.yoda_sound = eng.create_sound("lostlevels/assets/audio/objects/lego_yoda_death.ogg")
+        self.yoda_sound.volume = 1
+        self.yoda_sound.play()
+
+    # Stop playing the Yoda sound effect when the player dies.
+    def player_killed(self):
+        self.yoda_sound.stop()
+
+    # Stop playing the Yoda sound effect when the level ends.
+    def level_finish(self):
+        self.yoda_sound.stop()
 
 # Define the level data for the boss fight section of the level.
 class Level13_bossfight(levelgenerator.LevelData):
@@ -328,8 +355,13 @@ def get_preview():
     return "engine/assets/missing.png"
 
 # Generate the level data for this level.
-def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section, first_life):
+def load_leveldata(eng: engine.LLEngine, 
+                   level: lostlevels.scenes.Level, 
+                   section: str, 
+                   first_life: bool, 
+                   first_load: bool):
     global biome_music_suffix
+    global holding_key
 
     # Extract the biome and section information from the section name. Verify the
     # biome given and create the level generator using the biome's name. If there 
@@ -341,11 +373,52 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         biome, name = "winter", split[0]
     gen = levelgenerator.LevelGenerator(eng, level, biome)
 
-
     # If this is the player's first life playing this level, reset the higher
     # power counter.
     if first_life:
         biome_music_suffix = ""
+
+    # If the level has loaded for the first time for the player's current life,
+    # reset the holding key counter.
+    if first_load:
+        holding_key = False
+
+    # Nested function for creating the SMB2 key that the player can hold.
+    def create_smb2_key(hold = False, before_entity = None):
+        # Create a key that the player can "use".
+        key = eng.create_entity_by_class("sprite", before_entity)
+        key.load("lostlevels/assets/sprites/smb2_key.png", (28, 32), 1)
+        key.set_baseorigin(pygame.math.Vector2(274, -392))
+        key.can_use = True
+
+        # SMB2 key: follow the player.
+        def key_follow_player():
+            # Have the key follow the player.
+            if abs(level.player.velocity.x) > 0.1:
+                key.flip(level.player.velocity.x < 0)
+            vertical_offset = 30 if level.player.index >= 1 and level.player.index <= 2 else 32
+            key.set_baseorigin(level.player.get_baseorigin() + pygame.math.Vector2(-2, vertical_offset))
+
+            # Toggle the visibility of the key.
+            key.draw = level.player.draw
+
+        # SMB2 key: upon using, set its per_frame event so that the key 
+        # follows the player.
+        def key_use():
+            global holding_key
+            key.movetype = engine.entity.MOVETYPE_NONE
+            key.get_event("per_frame").set_func(lambda self: key_follow_player())
+            key.can_use = False
+            holding_key = True
+
+        # Should the player hold the key by default?
+        if hold:
+            key_use()
+
+        # Bind the key's USE function to key_use() so that the player has 
+        # to equip the key manually.
+        else:
+            key.get_event("use").set_func(lambda self: key_use())
 
     # Is this the main section?
     if name == "main":
@@ -419,7 +492,7 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         return data
     
     # Is this the "SMB2" section?
-    elif name == "smb2" or name == "smb2_spawn_train":
+    elif name == "smb2":
         # Create the level data for this section.
         data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
 
@@ -455,11 +528,58 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create a random Koopa.
         gen.generate_koopa(pygame.math.Vector2(832, -368))
 
-        # Add a fake SMB2-like door that leads to a fake underground section.
+        # Add a fake SMB2-like door that leads to a fake underground section
+        door = eng.create_entity_by_class("sprite", eng.entity_head())
+        door.load("lostlevels/assets/sprites/smb2_door.png", (32, 64), 1)
+        door.movetype = engine.entity.MOVETYPE_NONE
+        door.set_baseorigin(pygame.math.Vector2(992, -352))
+        door.can_use = holding_key
+        door.use_dist = 10
+
+        # SMB2 door: open the door if the player has the key.
+        def door_use():
+            global holding_key
+
+            # Load the fake underground section after 1.5 seconds.
+            def load_newsection():
+                # Check that the door entity still exists.
+                if door.deleted:
+                    return
+                
+                # Check that the player is stil alive.
+                if not level.player.alive:
+                    return
+                
+                # Load the new level section.
+                level.load_newlevel("underground_fake_underground", 
+                                    pygame.math.Vector2(64, -350), 
+                                    level.time_remaining)
+
+            # Untoggle the holding key counter.
+            holding_key = False
+
+            # Create a 1.5-second timer for loading the fake underground section.
+            level.player.can_die = False
+            eng.delete_entity(level.player)
+            eng.create_timer(load_newsection, 1.5)
+
+            # Hide the door to create the impression it has been opened.
+            door.draw = False
+
+            # Play a sound effect for entering the door.
+            door_sound = eng.create_sound("lostlevels/assets/audio/objects/door_open.ogg")
+            door_sound.volume = 1
+            door_sound.play()
+        door.get_event("use").set_func(lambda self: door_use())
+
+        # Add a fake SMB2-like hill to accompany the door.
         smb2 = eng.create_entity_by_class("sprite", eng.entity_head())
-        smb2.load("lostlevels/assets/sprites/smb2_door.png", (256, 352), 1)
+        smb2.load("lostlevels/assets/sprites/smb2_hill.png", (256, 352), 1)
         smb2.movetype = engine.entity.MOVETYPE_NONE
         smb2.set_baseorigin(pygame.math.Vector2(860, -128))
+
+        # Add an invisible platform so that the player can stand on the hill.
+        gen.generate_rope(pygame.math.Vector2(860, -128), 8, False)
 
         # Create some bushes.
         gen.generate_bush(pygame.math.Vector2(704, -384), 4)
@@ -475,8 +595,10 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create a wall beyond the door as well so that the player cannot progress beyond the map.
         gen.generate_ground(pygame.math.Vector2(1116, 0), height = 15)
         
-        # If the player came out of the jar section pipe, spawn a 1996 Stock train.
-        if name == "smb2_spawn_train":
+        # If the player came out of the jar section pipe with a key, spawn a 1996 Stock train 
+        # and the key.
+        if holding_key:
+            # Spawn the train.
             train = eng.create_entity_by_class("sprite")
             train.movetype = engine.entity.MOVETYPE_CUSTOM
             train.load("lostlevels/assets/sprites/1996_stock.png", (6908, 158), 1)
@@ -491,6 +613,9 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
             motors = eng.create_sound("lostlevels/assets/audio/objects/1996_stock_rolling.ogg")
             motors.volume = 1
             motors.play()
+
+            # Spawn the key.
+            create_smb2_key(True, None)
 
         # Return the level data generated for this section.
         return data
@@ -526,31 +651,28 @@ def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section
         # Create a pipe for the player to transport back out of.
         body = gen.generate_pipe_body(pygame.math.Vector2(256, 0), lostlevels.sprites.PIPE_180)
         gen.generate_pipe_top(pygame.math.Vector2(256, -32), lostlevels.sprites.PIPE_180,
-                              "overground_smb2_spawn_train", pygame.math.Vector2(596, -230))
+                              "overground_smb2", pygame.math.Vector2(596, -230))
         
         # Create a key that the player can "use".
-        key = eng.create_entity_by_class("sprite", body[0])
-        key.load("lostlevels/assets/sprites/smb2_key.png", (28, 32), 1)
-        key.set_baseorigin(pygame.math.Vector2(274, -392))
-        key.can_use = True
-
-        # SMB2 key: follow the player.
-        def key_follow_player():
-            key.set_baseorigin(level.player.get_baseorigin() + pygame.math.Vector2(0, 32))
-            key.draw = level.player.draw
-
-        # SMB2 key: upon using, set its per_frame event so that the key follows
-        # the player.
-        def key_use():
-            key.movetype = engine.entity.MOVETYPE_NONE
-            key.get_event("per_frame").set_func(lambda self: key_follow_player())
-
-        # Set the key's USE function to key_use().
-        key.get_event("use").set_func(lambda self: key_use())
+        create_smb2_key(holding_key, body[0])
 
         # Return the level data generated for this section.
         return data
-    
+
+    # Is this the fake underground section afer opening the "SMB2" door?
+    elif name == "fake_underground":
+        # Create the level data for this section.
+        data = Level13_fake_underground(eng, level, pygame.math.Vector2(276, -64), biome)
+
+        # Stop the map from scrolling.
+        level.max_scroll = 0
+
+        # Force the player to fall at a fast speed.
+        level.player.velocity = pygame.math.Vector2(0, -400)
+
+        # Return the level data generated for this section.
+        return data
+
     # Is this the boss fight setion?
     elif name == "bossfight":
         # Create the level data for this section.

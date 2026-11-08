@@ -14,8 +14,16 @@ def boulder_hit(self, other, coltype):
     if other.get_absorigin().x > 576:
         return
     
-    # Destroy the entity.
-    self._engine.delete_entity(other)
+    # Is the other entity a pipe top? As it checks whether the pipe entity
+    # still exists for player transportation, it should be made invisible
+    # rather than outright deleted.
+    if other.get_class() == "pipetop":
+        other.movetype = engine.entity.MOVETYPE_NONE
+        other.draw = False
+
+    # Otherwise, delete the entity.
+    else:
+        self._engine.delete_entity(other)
 
 # Rising platform: upon collision, configure the per_frame event.
 def rise_on_collide(group):

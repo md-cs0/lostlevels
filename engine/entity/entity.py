@@ -26,6 +26,7 @@ class Entity():
         self.active = False
         self.draw = True
         self.can_use = False
+        self.use_dist = 200
         self.identifier = ""
 
         # Entity motion.

@@ -132,7 +132,11 @@ def get_preview():
     return "lostlevels/assets/levels/1_2_preview.png"
 
 # Generate the level data for this level.
-def load_leveldata(eng: engine.LLEngine, level: lostlevels.scenes.Level, section, first_life):
+def load_leveldata(eng: engine.LLEngine, 
+                   level: lostlevels.scenes.Level, 
+                   section: str, 
+                   first_life: bool, 
+                   first_load: bool):
     # Is this the main section?
     if section == "main":
         # Create the level generator and level data for this section.

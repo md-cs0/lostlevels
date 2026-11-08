@@ -33,3 +33,4 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Coldplay - A Rush of Blood to the Head
 - Coldplay - Don't Panic
 - Coldplay - My Universe
+- Coldplay - Spies
