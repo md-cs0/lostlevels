@@ -1,6 +1,7 @@
 """World 1-3."""
 
 import random
+import time
 import pygame
 import engine
 import lostlevels
@@ -132,7 +133,8 @@ class Level13_higherpower(levelgenerator.LevelData):
 
         # Manage the music video.
         self.music_video_frames = []
-        self.music_video_index = -1
+        self.music_video_index = 0
+        self.music_video_last_timestamp = 0
         for i in range(0, coldplay_higher_power_frame_count):
             frame = eng.create_ui_element_by_class("image")
             frame.load(f"lostlevels/assets/sprites/coldplay_higher_power/frame-{(i + 1):03d}.png")
@@ -148,7 +150,7 @@ class Level13_higherpower(levelgenerator.LevelData):
         self.higher_power_song.stop()
 
     # Manage Chris Martin.
-    def per_frame(self):
+    def post_physics(self):
         # Have we achieved the higher power?
         if self.higher_power_achieved:
             # Have Chris Martin carry the player if the player is alive.
@@ -158,7 +160,7 @@ class Level13_higherpower(levelgenerator.LevelData):
 
             # Generate more of the world if we are nearing the furthest point up to
             # which the world currently exists.
-            if self.max_world_x - self._level.player.get_baseorigin().x < 800:
+            while self.max_world_x - self._level.player.get_baseorigin().x < 800:
                 # Generate new scenery.
                 self.gen.generate_ground(pygame.math.Vector2(self.max_world_x, -416), 40, 2)
                 if random.randint(0, 2) < 2:
@@ -174,6 +176,17 @@ class Level13_higherpower(levelgenerator.LevelData):
 
                 # Increment the max world x-coordinate value by 576 (32 * 18).
                 self.max_world_x += 576
+
+            # Increment the music video frame counter at 24 FPS, if showing.
+            if self.music_video_last_timestamp > 0 and self._level.player.alive:
+                frame_increment = int((time.perf_counter() - self.music_video_last_timestamp) / (1 / 24))
+                if frame_increment > 0:
+                    self.music_video_frames[self.music_video_index].enabled = False
+                    self.music_video_index = ((self.music_video_index + frame_increment) 
+                                            % len(self.music_video_frames))
+                    self.music_video_frames[self.music_video_index].enabled = True
+                    self.music_video_last_timestamp += frame_increment * (1 / 24)
+
         else:
             # Have Chris Martin look at the player if the higher power has
             # not been achieved.
@@ -217,11 +230,20 @@ class Level13_higherpower(levelgenerator.LevelData):
 
     # Show the music video for Coldplay - Higher Power.
     def show_higher_power_video(self):
+        # Check that the first video frame still exists.
+        if self.music_video_frames[0].deleted:
+            return
+        
+        # Check that the player is stil alive.
+        if not self._level.player.alive:
+            return
+
         # Create a flash bang that gradually fades.
         effects.create_flash_bang(self._engine, 8)
 
         # Begin showing the music video.
-        self.increment_higher_power_video_frame()
+        self.music_video_frames[0].enabled = True
+        self.music_video_last_timestamp = time.perf_counter()
 
         # Slow down Chris Martin so that the player observes him leaving the
         # screen for a longer duration after dying.
@@ -229,21 +251,16 @@ class Level13_higherpower(levelgenerator.LevelData):
         self.chris_martin.move = 750
         self.chris_martin.velocity = pygame.math.Vector2(0, 0)
 
-    # Increment the music video frame index.
-    def increment_higher_power_video_frame(self):
-        # Conclude if the player has died.
+    # Stop showing Coldplay's Higher Power and kill the player.
+    def kill_player(self):
+        # Check that the first video frame still exists.
+        if self.music_video_frames[0].deleted:
+            return
+        
+        # Check that the player is stil alive.
         if not self._level.player.alive:
             return
 
-        # Move to the next frame.
-        if self.music_video_index >= 0:
-            self.music_video_frames[self.music_video_index].enabled = False
-        self.music_video_index = (self.music_video_index + 1) % len(self.music_video_frames)
-        self.music_video_frames[self.music_video_index].enabled = True
-        self._engine.create_timer(Level13_higherpower.increment_higher_power_video_frame, 1 / 24, self)
-
-    # Stop showing Coldplay's Higher Power and kill the player.
-    def kill_player(self):
         # Stop the music video and kill the player.
         self.music_video_frames[self.music_video_index].enabled = False
         self.higher_power_song.stop()

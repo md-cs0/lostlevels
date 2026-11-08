@@ -143,6 +143,9 @@ class Level(engine.Game):
                 self.time_remaining = max(self.time_remaining - self._engine.globals.frametime, 0)
                 if self.time_remaining == 0 and self.player.alive:
                     self.death()
+
+        # Forward this event to the level data object.
+        self.leveldata.post_physics()
         
         # Set the camera offset based on the position of the player.
         player_centre = (576 / 2) - (24 / 2)
@@ -170,9 +173,6 @@ class Level(engine.Game):
             self.esc_prompt.enabled = self.player.alive and not self.finished
         else:
             self.esc_prompt.enabled = False
-
-        # Forward this event to the level data object.
-        self.leveldata.post_physics()
 
     # Scroll the map.
     def scroll_map(self):
