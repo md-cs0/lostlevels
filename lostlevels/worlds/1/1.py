@@ -57,7 +57,7 @@ def load_leveldata(eng: engine.LLEngine,
                    first_life: bool, 
                    first_load: bool):
     # Is this the main section?
-    if section == "main":
+    if section == "1.1.main":
         # Create the level generator and level data for this section.
         gen = levelgenerator.LevelGenerator(eng, level, "overground")
         data = Level11_main(eng, level, pygame.math.Vector2(32, -358), "overground")
@@ -209,8 +209,9 @@ def load_leveldata(eng: engine.LLEngine,
         # Create the Koopa.
         gen.generate_koopa(pygame.math.Vector2(3424, -368))
 
-        # Create the flagpole.
-        gen.generate_flagpole(pygame.math.Vector2(6346, -106))
+        # Create the flagpole if this section was not loaded by world 1-3.
+        if level.get_world() == 1 and level.get_level() == 1:
+            gen.generate_flagpole(pygame.math.Vector2(6346, -106))
 
         # Return the level data generated for this section.
         return data
@@ -236,7 +237,7 @@ def load_leveldata(eng: engine.LLEngine,
         gen.generate_pipe_2x2(pygame.math.Vector2(544, -384), leftroot = True)
         gen.generate_pipe_body(pygame.math.Vector2(544, -320), 9)
         gen.generate_pipe_body(pygame.math.Vector2(512, -352), orientation = lostlevels.sprites.PIPE_270)
-        gen.generate_pipe_top(pygame.math.Vector2(480, -352), lostlevels.sprites.PIPE_270, "main",
+        gen.generate_pipe_top(pygame.math.Vector2(480, -352), lostlevels.sprites.PIPE_270, "1.1.main",
                               pygame.math.Vector2(5236, -294))
         
         # Generate a computer that will crash the game upon using it.

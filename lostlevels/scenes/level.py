@@ -35,6 +35,13 @@ class Level(engine.Game):
         # Create the player entity before the rest of the map is generated.
         self.player = self._engine.create_entity_by_class("player")
         self.player.level = self
+
+        # If the section name is just "main", update the string so that it is
+        # prefixed with the world and level numbers. This is required for a
+        # hack used in world 1-3 code where a pipe sometimes takes the player
+        # to world 1-1 by re-using its level module.
+        if section == "main":
+            section = f"{self.__game.world}.{self.__game.level}.main"
         
         # Generate the world by calling the module's load_leveldata() function.
         self.max_scroll = -1
@@ -100,6 +107,14 @@ class Level(engine.Game):
                                  f"({player_offset.x}, {player_offset.y}) and time limit "      \
                                  f"{self.time_remaining:.0f}")
 
+    # Get the world number.
+    def get_world(self):
+        return self.__game.world
+
+    # Get the level number.
+    def get_level(self):
+        return self.__game.level
+    
     # Get the save from the game object.
     def get_save(self):
         return self.__game.save

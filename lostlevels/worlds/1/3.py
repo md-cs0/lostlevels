@@ -22,6 +22,9 @@ biome_music_suffix = ""
 # Store whether the player currently holds a key.
 holding_key = False
 
+# Due the way the module is named, the world 1-1 module must be loaded dynamically.
+world_1_1_module = None
+
 # Define the level data for this level's primary sections.
 class Level13_main(levelgenerator.LevelData):
     # Create the level data for the primary sections.
@@ -362,6 +365,7 @@ def load_leveldata(eng: engine.LLEngine,
                    first_load: bool):
     global biome_music_suffix
     global holding_key
+    global world_1_1_module
 
     # Extract the biome and section information from the section name. Verify the
     # biome given and create the level generator using the biome's name. If there 
@@ -371,6 +375,9 @@ def load_leveldata(eng: engine.LLEngine,
         biome, name = split
     else:
         biome, name = "winter", split[0]
+    
+    # Only create the level generator if we are not forwarding level generation to
+    # the world 1-1 module.
     gen = levelgenerator.LevelGenerator(eng, level, biome)
 
     # If this is the player's first life playing this level, reset the higher
@@ -382,6 +389,10 @@ def load_leveldata(eng: engine.LLEngine,
     # reset the holding key counter.
     if first_load:
         holding_key = False
+
+    # Preload the world 1-1 module.
+    if world_1_1_module == None:
+        world_1_1_module = lostlevels.scenes.LoadingLevel.load_level_module(1, 1)
 
     # Nested function for creating the SMB2 key that the player can hold.
     def create_smb2_key(hold = False, before_entity = None):
@@ -421,7 +432,7 @@ def load_leveldata(eng: engine.LLEngine,
             key.get_event("use").set_func(lambda self: key_use())
 
     # Is this the main section?
-    if name == "main":
+    if name == "1.3.main":
         # Create the level data for this section.
         data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)
 
@@ -444,13 +455,13 @@ def load_leveldata(eng: engine.LLEngine,
 
         # Create an array of 8 pipes that are all usable.
         pipe_sections = [
-            ("overground_main", None),
+            ("overground_1.3.main", None),
             ("overground_smb2", None),
             (f"{biome}_bossfight", None),
             ("nowhere", None),
             (f"{biome}_higherpower", None),
             (f"{biome}_goombas", None),
-            (f"{biome}_goombas", None),
+            (f"1.1.main", None),
             (f"{biome}_goombas", None)
         ]
         for i in range(0, 8):
@@ -843,6 +854,8 @@ def load_leveldata(eng: engine.LLEngine,
 
         # Return the level data generated for this section.
         return data
-    
-    # Invalid section?
-    return None
+
+    # The 7th pipe may've been used, so forward all remainder section loading code to the world 1-1
+    # module.
+    else:
+        return world_1_1_module.load_leveldata(eng, level, section, first_life, first_load)

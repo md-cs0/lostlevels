@@ -12,6 +12,12 @@ from .. import demofile
 
 # Loading level scene.
 class LoadingLevel(engine.Game):
+    # Static method for loading a level module. A level module is only loaded
+    # the first time and is cached for all subsequent fetches.
+    @staticmethod
+    def load_level_module(world, level):
+        return __import__(f"lostlevels.worlds.{world}.{level}", fromlist = "*")
+
     # Construct the loading level scene.
     def __init__(self, eng, game, level_override = None):
         # Initialize the game interface.
@@ -92,8 +98,7 @@ class LoadingLevel(engine.Game):
         path = f"lostlevels/worlds/{self.__game.world}/{self.__game.level}.py"
         if not os.path.isfile(path):
             self._engine.console.error(f"[Lost Levels]: missing module \"{path}\"!")
-        self.__game.levelmodule = __import__(f"lostlevels.worlds.{self.__game.world}.{self.__game.level}", 
-                                             fromlist = "*")
+        self.__game.levelmodule = LoadingLevel.load_level_module(self.__game.world, self.__game.level)
         
         # Create a textlabel for presenting the level to the player.
         worldname = self._engine.create_ui_element_by_class("text")

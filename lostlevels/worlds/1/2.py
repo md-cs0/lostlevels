@@ -138,7 +138,7 @@ def load_leveldata(eng: engine.LLEngine,
                    first_life: bool, 
                    first_load: bool):
     # Is this the main section?
-    if section == "main":
+    if section == "1.2.main":
         # Create the level generator and level data for this section.
         gen = levelgenerator.LevelGenerator(eng, level, "desert")
         data = Level12_main(eng, level, pygame.math.Vector2(32, -358), "desert")
