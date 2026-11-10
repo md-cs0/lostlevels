@@ -380,10 +380,17 @@ def load_leveldata(eng: engine.LLEngine,
     # the world 1-1 module.
     gen = levelgenerator.LevelGenerator(eng, level, biome)
 
-    # If this is the player's first life playing this level, reset the higher
-    # power counter.
+    # If this is the player's first life playing this level, reset the biome music
+    # suffix.
     if first_life:
         biome_music_suffix = ""
+
+    # If this is not the player's first life playing this level and the higher
+    # power has been achieved, replace the player's death sound with a snippet
+    # of Coldplay's Fix You.
+    elif biome_music_suffix == "_coldplay":
+        level.player.death_sound = eng.create_sound("lostlevels/assets/audio/player/death_coldplay.ogg")
+        level.player.death_sound.volume = 1
 
     # If the level has loaded for the first time for the player's current life,
     # reset the holding key counter.

@@ -34,3 +34,4 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Coldplay - Don't Panic
 - Coldplay - My Universe
 - Coldplay - Spies
+- Coldplay - Fix You
