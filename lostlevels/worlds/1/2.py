@@ -284,7 +284,7 @@ def load_leveldata(eng: engine.LLEngine,
         # also be a bunch of Goombas.
         gen.generate_powerup_block(pygame.math.Vector2(640, -160), 2)
         for i in range(0, 16):
-            gen.generate_goomba(pygame.math.Vector2(1216, -32 + i * 26))
+            gen.generate_goomba(pygame.math.Vector2(1312, -32 + i * 26))
 
         # Create the platform and walls for the train that will come out later.
         gen.generate_ground(pygame.math.Vector2(320, -448), 55)
