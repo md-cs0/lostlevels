@@ -827,9 +827,9 @@ def load_leveldata(eng: engine.LLEngine,
         gen.generate_ground(pygame.math.Vector2(0, -416), 15, 2)
         
         # Create a platform that will fall down before the player even reaches it.
-        falling_platform = gen.generate_platform(pygame.math.Vector2(512, -416), 4)
+        falling_platform = gen.generate_platform(pygame.math.Vector2(640, -416), 4)
         def platform_fall():
-            if (level.player.get_baseorigin().x > 480 
+            if (level.player.get_baseorigin().x > 608 
                 and falling_platform[0].movetype == engine.entity.MOVETYPE_CUSTOM):
                 for ent in falling_platform:
                     ent.movetype = engine.entity.MOVETYPE_PHYSICS
@@ -837,15 +837,29 @@ def load_leveldata(eng: engine.LLEngine,
             ent.get_event("per_frame").set_func(lambda self: platform_fall())
 
         # Create another platform that will levitate upwards when the player stands on it.
-        rising_platform = gen.generate_platform(pygame.math.Vector2(672, -416), 4)
+        rising_platform = gen.generate_platform(pygame.math.Vector2(896, -416), 4)
         for ent in rising_platform:
             ent.get_event("collisionfinal").set_func(
                 lambda hit, other, coltype, coldir: sample_hooks.rise_on_collide(rising_platform))
         
-        # Create the final piece of ground with the flagpole.
-        gen.generate_ground(pygame.math.Vector2(832, -416), 100, 2)
-        gen.generate_blocks(pygame.math.Vector2(832, -384))
-        gen.generate_flagpole(pygame.math.Vector2(842, -106))
+        # Create the final piece of ground with some troll flagpoles and the real flagpole. The
+        # blocks holding the flagpoles should not be collideable if the player has climbed a
+        # flagpole already.
+        def flagpole_hold_collision(other):
+            if other.get_class() == "player" and level.player.climbed_flagpole:
+                return False
+            return True
+        gen.generate_ground(pygame.math.Vector2(1280, -416), 100, 2)
+        blocks = gen.generate_blocks(pygame.math.Vector2(1280, -384))
+        blocks.extend(gen.generate_blocks(pygame.math.Vector2(1344, -384)))
+        blocks.extend(gen.generate_blocks(pygame.math.Vector2(1376, -384)))
+        gen.generate_flagpole(pygame.math.Vector2(1290, -106), spiked = True, troll = True)
+        gen.generate_flagpole(pygame.math.Vector2(1322, -138))
+        gen.generate_flagpole(pygame.math.Vector2(1354, -106), spiked = True, troll = True)
+        gen.generate_flagpole(pygame.math.Vector2(1386, -106), spiked = True, troll = True)
+        for block in blocks:
+            block.get_event("collision").set_func(
+                lambda hit, other, coltype, coldir: flagpole_hold_collision(other))
 
         # Create some clouds.
         gen.generate_cloud(pygame.math.Vector2(288, -128))
@@ -854,10 +868,10 @@ def load_leveldata(eng: engine.LLEngine,
         gen.generate_cloud(pygame.math.Vector2(1184, -96), 3)
 
         # Disable scrolling beyond the flagpole.
-        level.max_scroll = 560
+        level.max_scroll = 1008
 
         # Create a wall beyond the flagpole as well so that the player cannot progress beyond the map.
-        gen.generate_ground(pygame.math.Vector2(1168, 0), height = 15)
+        gen.generate_ground(pygame.math.Vector2(1616, 0), height = 15)
 
         # Return the level data generated for this section.
         return data

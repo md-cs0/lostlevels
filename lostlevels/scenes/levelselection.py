@@ -159,3 +159,8 @@ class LevelSelection(engine.Game):
     def post_physics(self):
         pos = self.player.get_baseorigin()
         self.dialogue.set_position(engine.ui.UDim2(0, pos.x + 30, 0, -pos.y))
+
+    # This method should not be called during normal operation and so is used
+    # for debugging purposes.
+    def death(self):
+        self._engine.console.warn("[Lost Levels]: unexpected call to LevelSelection::death()")

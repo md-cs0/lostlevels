@@ -112,24 +112,3 @@ class Logger():
         self.__closed = True
         self.__file.write("".join(self.__buffer))
         self.__file.close()
-
-# Execute this file directly for tests.
-if __name__ == "__main__":
-    # Create a new logger instance, and do some writing.
-    test = Logger("test")
-    test.log("hello world!")
-    test.warn("hopefully, logging works!")
-
-    # Test collision.
-    try:
-        collide = Logger("test")
-    except FileExistsError:
-        print("collision detection works!")
-
-    # Create another two logger instances.
-    test2 = Logger("test2", False)
-    test3 = Logger("test3", False)
-    test3.warn("Hello world!")
-
-    # Error.
-    test3.error("test!")

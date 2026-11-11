@@ -141,7 +141,7 @@ def load_leveldata(eng: engine.LLEngine,
     if section == "1.2.main":
         # Create the level generator and level data for this section.
         gen = levelgenerator.LevelGenerator(eng, level, "desert")
-        data = Level12_main(eng, level, pygame.math.Vector2(32, -358), "desert")
+        data = Level12_main(eng, level, pygame.math.Vector2(4032, -358), "desert")
 
         # Rocket power-up block: upon releasing the rocket launcher, a Goomba
         # should immediately fall from the sky.

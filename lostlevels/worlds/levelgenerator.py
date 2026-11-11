@@ -328,12 +328,13 @@ class LevelGenerator():
         return ents
     
     # Generate a flagpole.
-    def generate_flagpole(self, offset, draw = True, troll = False, has_flag = True):
+    def generate_flagpole(self, offset, draw = True, spiked = False, troll = False, has_flag = True):
         # Create the flagpole itself
-        ent = self.__generate_sprites("flagpole", offset, draw = draw, 
+        ent = self.__generate_sprites("flagpole", offset, draw = draw, spiked = spiked,
                                       before_entity = self.__engine.entity_head())
         if troll:
             ent[0].index = 1
+            ent[0].troll = True
 
         # If desired, create a flag as well.
         if has_flag:

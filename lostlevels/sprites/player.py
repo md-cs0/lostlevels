@@ -27,7 +27,7 @@ class Player(engine.entity.Sprite, Humanoid):
         self.acceleration = 6.5
 
         # Load the player spritesheet.
-        self.load("lostlevels/assets/sprites/player_small.png", (24, 58), 12)
+        self.set_spritesheet("player_small")
 
         # Cache the status of the player jumping.
         self.__jumping = 0
@@ -71,6 +71,7 @@ class Player(engine.entity.Sprite, Humanoid):
         self.enemy_jump_multiplier = 1
 
         # Used for climbing the player.
+        self.climbed_flagpole = False
         self.climbing = False
         self.climb_velocity = 0
 
@@ -273,7 +274,7 @@ class Player(engine.entity.Sprite, Humanoid):
         else:
             self.denied_sound.repeat()
 
-    # Kill this player. This method should not be called.
+    # Kill this player. This method should not be called directly by game code.
     def kill(self):
         # Invalidate the player's alive status.
         self.alive = False
@@ -288,6 +289,10 @@ class Player(engine.entity.Sprite, Humanoid):
         self.death_sound.play()
         self._engine.console.log("[Lost Levels]: the player has died!")
 
+    # Set the player's spritesheet.
+    def set_spritesheet(self, spritesheet = "player_small"):
+        self.load(f"lostlevels/assets/sprites/{spritesheet}.png", (24, 58), 12)
+
     # Equip a power-up.
     def equip_powerup(self, powerup):
         # Set the player's power-up state.
@@ -297,6 +302,9 @@ class Player(engine.entity.Sprite, Humanoid):
         if self.powerup == POWERUP_DEATHCAP:
             # Set the player's jump multiplier to something insane.
             self.jump_multiplier = 4
+
+            # Update the player's spritesheet to the death cap one.
+            self.set_spritesheet("player_death_cap")
 
     # Hurt this player. This method should be used instead for downgrading the player or
     # killing the player outright. For always killing the player, see Level::death().
@@ -323,6 +331,7 @@ class Player(engine.entity.Sprite, Humanoid):
         # Drop the power-up.
         self.downgrade_sound.repeat()
         self.powerup = POWERUP_NONE
+        self.set_spritesheet("player_small")
     
     # Set the player's invincibility status.
     def set_invincible(self, invincible):

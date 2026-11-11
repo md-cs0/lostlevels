@@ -1,6 +1,6 @@
 """A basic sprite entity implementation, with physics operating by default.
 
-Missing sprite sheets means the sprite texture will default to the missing 
+Missing spritesheets means the sprite texture will default to the missing 
 texture image, which is 16x16 and will be stretched to compensate for the
 tile size.
 """
@@ -30,6 +30,7 @@ class Sprite(entity.Entity):
         self.__texture = None
         self.__flip_x = False
         self.__flip_y = False
+        self.__new_spritesheet_loaded = False
 
         # Current tile index (which will wrap around).
         self.index = 0
@@ -80,6 +81,9 @@ class Sprite(entity.Entity):
             self._engine.console.warn(f"tile sheet path \"{path}\" is invalid")
             self.__tiles = cached_tiles[path] = [pygame.transform.scale(self._engine.missing, res)]
 
+        # Update the new spritesheet counter.
+        self.__new_spritesheet_loaded = True
+
     # Toggle which directions the sprite should flip in.
     def flip(self, flip_x = False, flip_y = False):
         if self.__flip_x != flip_x or self.__flip_y != flip_y:
@@ -89,8 +93,9 @@ class Sprite(entity.Entity):
 
     # Draw this map tile entity.
     def draw_sprite(self, screen):
-        # Re-render the texture if the index changed or if it is null.
-        if not self.__texture or self.index != self.__oldindex:
+        # Re-render the texture if the index changed, if it is null, or if a new
+        # spritesheet has been loaded.
+        if not self.__texture or self.index != self.__oldindex or self.__new_spritesheet_loaded:
             self.__oldindex = self.index
             self.__texture = pygame.Surface((self._absrect.width, self._absrect.height),
                                             pygame.SRCALPHA)
