@@ -76,13 +76,11 @@ class Sprite(entity.Entity):
         self.set_hitbox(pygame.math.Vector2(*res))
 
         # Call the pre-load function.
+        self.__texture = None
         self.__tiles = Sprite.preload(path, res, count)
         if not self.__tiles:
             self._engine.console.warn(f"tile sheet path \"{path}\" is invalid")
             self.__tiles = cached_tiles[path] = [pygame.transform.scale(self._engine.missing, res)]
-
-        # Update the new spritesheet counter.
-        self.__new_spritesheet_loaded = True
 
     # Toggle which directions the sprite should flip in.
     def flip(self, flip_x = False, flip_y = False):
@@ -93,9 +91,8 @@ class Sprite(entity.Entity):
 
     # Draw this map tile entity.
     def draw_sprite(self, screen):
-        # Re-render the texture if the index changed, if it is null, or if a new
-        # spritesheet has been loaded.
-        if not self.__texture or self.index != self.__oldindex or self.__new_spritesheet_loaded:
+        # Re-render the texture if the index changed or if it is null.
+        if not self.__texture or self.index != self.__oldindex:
             self.__oldindex = self.index
             self.__texture = pygame.Surface((self._absrect.width, self._absrect.height),
                                             pygame.SRCALPHA)

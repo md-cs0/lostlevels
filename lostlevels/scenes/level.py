@@ -44,6 +44,8 @@ class Level(engine.Game):
             section = f"{self.__game.world}.{self.__game.level}.main"
         
         # Generate the world by calling the module's load_leveldata() function.
+        self.can_scroll_left = False
+        self.max_scroll_left = 0
         self.max_scroll = -1
         self.leveldata = game.levelmodule.load_leveldata(self._engine, 
                                                          self, 
@@ -140,6 +142,21 @@ class Level(engine.Game):
     # Load a new level section.
     def load_newlevel(self, section, offset, time_remaining):
         self.__game.load_level(section, offset, time_remaining, False)
+
+    # Toggle the scoreboard.
+    def toggle_scoreboard(self, toggle):
+        if self.__game.scorebox:
+            self.__game.scorebox.enabled = toggle
+        if self.__game.livesbox:
+            self.__game.livesbox.enabled = toggle
+        if self.__game.coin:
+            self.__game.coin.enabled = toggle
+        if self.__game.coinsbox:
+            self.__game.coinsbox.enabled = toggle
+        if self.__game.worldbox:
+            self.__game.worldbox.enabled = toggle
+        if self.__game.timebox:
+            self.__game.timebox.enabled = toggle
         
     # Forward the per-frame event to the level data object.
     def per_frame(self):
@@ -166,7 +183,7 @@ class Level(engine.Game):
         # Set the camera offset based on the position of the player.
         player_centre = (576 / 2) - (24 / 2)
         player_x = self.player.get_absorigin().x
-        if player_x > player_centre:
+        if player_x > player_centre or (self.can_scroll_left and player_x < player_centre):
             self.camoffset += player_x - player_centre
 
         # Scroll all the entities and the background.
@@ -192,14 +209,16 @@ class Level(engine.Game):
 
     # Scroll the map.
     def scroll_map(self):
-        # Cap the camera offset based on the defined max scroll variable.
+        # Cap the camera offset based on the defined scroll variables.
         if self.max_scroll >= 0:
             self.camoffset = min(self.camoffset, self.max_scroll)
+        if self.can_scroll_left:
+            self.camoffset = max(self.camoffset, self.max_scroll_left)
 
         # Set the displacement of all entities.
         ent = self._engine.entity_head()
         while ent:
-            # If this is the left wall, scroll it with the player.
+            # If this is the left wall, scroll it with the camera.
             if ent == self.leftwall:
                 ent.set_baseorigin(pygame.math.Vector2(self.camoffset - 10, 0))
                 ent = ent.next
@@ -221,8 +240,10 @@ class Level(engine.Game):
                 # Scroll the entity.
                 ent.set_origindisp(pygame.math.Vector2(-self.camoffset, 0))
 
-                # If this entity has scrolled far enough to the back, delete it.
-                if ent.get_abstopright().x < -576 and (ent.game_flags & game_flags.DO_NOT_DELETE) == 0:
+                # If this entity has scrolled far enough to the back and the player
+                # cannot go backwards, delete it.
+                if (ent.get_abstopright().x < -576 and (ent.game_flags & game_flags.DO_NOT_DELETE) == 0
+                    and not self.can_scroll_left):
                     self._engine.delete_entity(ent)
 
             # Go to the next entity.
@@ -261,7 +282,7 @@ class Level(engine.Game):
     # The death sequence: kill the player (if they are not already being killed) and
     # go back to the loading level screen.
     def death(self):
-        # Ignore if the player if already dead.
+        # Ignore if the player is already dead.
         if not self.player.alive:
             return
 
@@ -306,8 +327,13 @@ class Level(engine.Game):
         self.last_keys = self.last_keys[1:]
         self.last_key_press = time.perf_counter()
 
-        # Forward this event to the player.
+        # Forward this event to the player and level data object.
         self.player.keydown(enum, unicode, focused)
+        self.leveldata.keydown(enum, unicode, focused)
+
+    # Forward keyup events to the level data object.
+    def keyup(self, enum, unicode, focused):
+        self.leveldata.keyup(enum, unicode, focused)
 
     # Get all held keys.
     def get_keys_dict(self):

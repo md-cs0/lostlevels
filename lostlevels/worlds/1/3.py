@@ -2,6 +2,7 @@
 
 import random
 import time
+import math
 import pygame
 import engine
 import lostlevels
@@ -19,10 +20,14 @@ coldplay_higher_power_frame_count = 122
 # Suffix to add to the end of the biome name when playing a biome's given music.
 biome_music_suffix = ""
 
-# Store whether the player currently holds a key.
+# Store information about the 2nd pipe section key.
 holding_key = False
+has_used_key = False
 
-# Due the way the module is named, the world 1-1 module must be loaded dynamically.
+# Has the player unlocked the 8th pipe section door?
+unlocked_cave_door = False
+
+# Due to the way the module is named, the world 1-1 module must be loaded dynamically.
 world_1_1_module = None
 
 # Define the level data for this level's primary sections.
@@ -113,8 +118,8 @@ class Level13_bossfight(levelgenerator.LevelData):
             self.boxing_glove.load("lostlevels/assets/sprites/boxing_glove.png", (180, 100), 1)
             self.boxing_glove.movetype = engine.entity.MOVETYPE_CUSTOM
             self.boxing_glove.velocity.x = 1000
-            self.boxing_glove.set_baseorigin(pygame.math.Vector2(620, 
-                                                                 self._level.player.get_baseorigin().y))
+            self.boxing_glove.set_baseorigin(
+                pygame.math.Vector2(620, self._level.player.get_baseorigin().y))
 
             # Create the collision function for the glove.
             def glove_collisionfinal(ent, other, coltype, coldir):
@@ -166,6 +171,9 @@ class Level13_higherpower(levelgenerator.LevelData):
         self.music_video_index = 0
         self.music_video_last_timestamp = 0
         for i in range(0, coldplay_higher_power_frame_count):
+            # TODO: nothing specific to change with this code for now, however the scorebar
+            # currently appears on top of this. This will be corrected in the future when
+            # I get around writing biome-specific modules.
             frame = eng.create_ui_element_by_class("image")
             frame.load(f"lostlevels/assets/sprites/coldplay_higher_power/frame-{(i + 1):03d}.png")
             frame.set_size(engine.ui.UDim2(1, 0, 1, 0))
@@ -213,7 +221,7 @@ class Level13_higherpower(levelgenerator.LevelData):
                 if frame_increment > 0:
                     self.music_video_frames[self.music_video_index].enabled = False
                     self.music_video_index = ((self.music_video_index + frame_increment) 
-                                            % len(self.music_video_frames))
+                                              % len(self.music_video_frames))
                     self.music_video_frames[self.music_video_index].enabled = True
                     self.music_video_last_timestamp += frame_increment * (1 / 24)
 
@@ -234,6 +242,12 @@ class Level13_higherpower(levelgenerator.LevelData):
         # Enable higher power mode.
         self.higher_power_achieved = True
         biome_music_suffix = "_coldplay"
+
+        # Log the achieving of higher power. If the user keeps an eye on their
+        # console, this should serve as a hint of the alternative exit for this
+        # level.
+        self._engine.console.log(
+            "[Lost Levels]: higher power unlocked, new features of world 1-3 unlocked")
 
         # Make Chris Martin start sprinting at a very fast speed.
         self.chris_martin.flip(False)
@@ -272,7 +286,7 @@ class Level13_higherpower(levelgenerator.LevelData):
         effects.create_flash_bang(self._engine, 8)
 
         # Begin showing the music video.
-        self.music_video_frames[0].enabled = True
+        self.music_video_frames[self.music_video_index].enabled = True
         self.music_video_last_timestamp = time.perf_counter()
 
         # Slow down Chris Martin so that the player observes him leaving the
@@ -295,12 +309,13 @@ class Level13_higherpower(levelgenerator.LevelData):
         self.music_video_frames[self.music_video_index].enabled = False
         self.higher_power_song.stop()
         self._level.death()
+        self._level.player.movetype = engine.entity.MOVETYPE_PHYSICS
 
         # Put some text making a reference to Coldplay's earlier alt-rock,
         # A Rush of Blood to the Head.
         text = self._engine.create_ui_element_by_class("text")
         text.load_localfont("lostlevels/assets/fonts/nes.ttf")
-        text.set_colour(pygame.Color(255, 255, 255))
+        text.set_colour(pygame.Color(255, 255, 255, 255))
         text.set_size(engine.ui.UDim2(1, 0, 0, 50))
         text.set_position(engine.ui.UDim2(0, 0, 1, -130))
         text.set_text(f"BLAME IT UPON A RUSH OF BLOOD TO THE HEAD...")
@@ -353,6 +368,701 @@ class Level13_goombas(levelgenerator.LevelData):
                 self._engine.delete_entity(self.train)
                 self.train = None
 
+# Define the level data for the inside cave section of the level.
+class Level13_cave(levelgenerator.LevelData):
+    # Fighting stages.
+    FIGHT_PRELOADING                = -1
+    FIGHT_WAITING_INPUT             = 0
+    FIGHT_SELECTING_ENEMY           = 1
+    FIGHT_SELECTING_ACTION          = 2
+    FIGHT_REMEMBERING_HOW_TO_SPEAK  = 3
+    FIGHT_COMBAT                    = 4
+    FIGHT_BACK_TO_WAITING_INPUT     = 5
+    FIGHT_SINGING                   = 6
+    FIGHT_ENDED                     = 7
+
+    # Create the level data for the Goombas section.
+    def __init__(self, eng, level, player_offset, biome):
+        # Call the LevelData constructor.
+        super().__init__(eng, level, player_offset, biome)
+
+        # Play the level music. 
+        level.play_music(biome + biome_music_suffix)
+
+        # Keep track of some of the generated world.
+        self.ground = None
+        self.trees = None
+        self.cached_time_remaining = 0
+
+        # Manage Seymour Skinner's introduction.
+        self.seymour = None
+        self.fade_in = None
+        self.seymour_speech_tick = 0
+        self.fight_sequence_triggered = False
+        self.seymour_speech = self._engine.create_sound("lostlevels/assets/audio/objects/seymour.ogg")
+        self.seymour_speech.volume = 1
+        self.seymour_dialogue = self._engine.create_ui_element_by_class("image")
+        self.seymour_dialogue.load("lostlevels/assets/sprites/seymour_skinner_speech.png")
+        self.seymour_dialogue.set_size(engine.ui.UDim2(0, 492, 0, 152), False)
+        self.seymour_dialogue.set_position(engine.ui.UDim2(0.5, -246, 0, 30))
+        self.upper_dialogue_cover = self._engine.create_ui_element_by_class("frame")
+        self.upper_dialogue_cover.set_size(engine.ui.UDim2(0, 250, 0, 20))
+        self.upper_dialogue_cover.set_position(engine.ui.UDim2(0, 218, 0, 58))
+        self.lower_dialogue_cover = self._engine.create_ui_element_by_class("frame")
+        self.lower_dialogue_cover.set_size(engine.ui.UDim2(0, 250, 0, 20))
+        self.lower_dialogue_cover.set_position(engine.ui.UDim2(0, 218, 0, 94))
+
+        # Manage variables for the general fight.
+        self.fight_started = False
+        self.fight_state = self.FIGHT_PRELOADING
+        self.fight_player_speech_tick = 0
+        self.fight_background = None
+        self.fight_asterisk = None
+        self.fight_seymour = None
+        self.fight_player_dialogue = None
+        self.fight_player_upper_dialogue_cover = None
+        self.fight_player_upper_dialogue_cover = None
+        self.fight_left_bar = None
+        self.fight_right_bar = None
+        self.fight_top_bar = None
+        self.fight_bottom_bar = None
+        self.fight_timestamp_since_last_resize = 0
+        self.fight_box_width = 511
+        self.fight_player = None
+        self.fight_beams = []
+        self.fight_beams_tick = 0
+        self.asgore_theme = self._engine.create_sound(
+            "lostlevels/assets/audio/undertale_asgore_theme.ogg")
+        self.asgore_theme.volume = 1
+
+        # Manage variables for the singing bit.
+        self.fight_can_sing = False
+        self.fight_move_seymour = True
+        self.fight_freeman = None
+        self.fight_freeman_animation_timestamp = 0
+        self.fight_flash_bang = None
+        self.my_universe = self._engine.create_sound(
+            "lostlevels/assets/audio/smb2jar_coldplay/main.ogg")
+        self.my_universe.volume = 1
+        self.explosion = self._engine.create_sound("lostlevels/assets/audio/objects/rocket_hit.ogg")
+        self.explosion.volume = 1
+
+    # Manage the Undertale-themed fight with Seymour Skinner.
+    def per_frame(self):
+        # Once the player reaches the trigger point, trigger the Undertale-themed fight
+        # with Seymour.
+        if not self.fight_sequence_triggered and self._level.player.get_baseorigin().x > 800:
+            # Toggle the fight triggered counter.
+            self.fight_sequence_triggered = True
+            self.fight_triggered_timestamp = time.perf_counter()
+
+            # Set the time limit to infinite and disable the scoreboard.
+            self.cached_time_remaining = self._level.time_remaining
+            self._level.time_remaining = math.inf
+            self._level.toggle_scoreboard(False)
+
+            # Stop the player from moving.
+            self._level.player.moveable = False
+            self._level.player.move = 0
+            self._level.player.always_animate = True
+
+            # Play Seymour's speech, accompanied by Toby Fox's Imminent Death from
+            # Deltarune, and stop playing the level's music.
+            self.seymour_speech.play(True)
+            self._level.stop_music()
+            self._engine.create_timer(Level13_cave.manage_seymour_speech, 0.59, self)
+
+        # Handle the actual fight.
+        elif self.fight_started and self.fight_state != self.FIGHT_ENDED:
+            # Toggle whether to draw the player based on whether the player is engaging in
+            # combat.
+            self.fight_player.draw = (self.fight_state == self.FIGHT_COMBAT)
+
+            # Move Seymour around.
+            if self.fight_move_seymour:
+                timestamp = time.perf_counter()
+                last_x = self.fight_seymour.get_position().x.offset
+                new_x = -38 + math.sin(timestamp * 2) * 10
+                self.fight_seymour.set_position(engine.ui.UDim2(
+                    0.5, new_x, 0, 35 + math.sin(timestamp * 4) * 10))
+                self.fight_seymour.flip(new_x - last_x > 0)
+
+            # Maintain the size of the box.
+            timestamp = time.perf_counter()
+            if timestamp - self.fight_timestamp_since_last_resize > 1 / 60:
+                # Resize the box.
+                bar_width = self.fight_top_bar.get_hitbox().x
+                if self.fight_box_width > bar_width:
+                    new_bar_width = min(self.fight_box_width - 10, 
+                                        self.fight_top_bar.get_hitbox().x + 15)
+                else:
+                    new_bar_width = max(self.fight_box_width - 10, 
+                                        self.fight_top_bar.get_hitbox().x - 15)
+                self.fight_top_bar.set_hitbox(pygame.math.Vector2(new_bar_width, 5))
+                self.fight_top_bar.set_baseorigin(pygame.math.Vector2(
+                    37 + self._level.camoffset + (250 - new_bar_width / 2), -250))
+                self.fight_bottom_bar.set_hitbox(pygame.math.Vector2(new_bar_width, 5))
+                self.fight_bottom_bar.set_baseorigin(pygame.math.Vector2(
+                    37 + self._level.camoffset + (250 - new_bar_width / 2), -385))
+                self.fight_left_bar.set_baseorigin(pygame.math.Vector2(
+                    32 + self._level.camoffset + (250 - new_bar_width / 2), -250))
+                self.fight_right_bar.set_baseorigin(pygame.math.Vector2(
+                    537 + self._level.camoffset - (250 - new_bar_width / 2), -250))
+                self.fight_timestamp_since_last_resize = timestamp
+
+            # Are we in combat mode?
+            if self.fight_state == self.FIGHT_COMBAT:
+                # Handle heart movement.
+                key_dict = self._level.get_keys_dict()
+                vel_x = 0
+                vel_y = 0
+                multiplier = 0.5 if key_dict[pygame.K_LSHIFT] else 1
+                if key_dict[pygame.K_LEFT]:
+                    vel_x -= 120 * multiplier
+                if key_dict[pygame.K_RIGHT]:
+                    vel_x += 120 * multiplier
+                if key_dict[pygame.K_UP]:
+                    vel_y += 120 * multiplier
+                if key_dict[pygame.K_DOWN]:
+                    vel_y -= 120 * multiplier
+                self.fight_player.velocity = pygame.math.Vector2(vel_x, vel_y)
+
+            # Are we transitioning back to the waiting for input state?
+            elif (self.fight_state == self.FIGHT_BACK_TO_WAITING_INPUT
+                  and self.fight_top_bar.get_hitbox().x == self.fight_box_width - 10):
+                # Show the player dialogue again.
+                self.manage_player_speech(20, 10)
+                self.fight_asterisk.enabled = True
+                self.fight_player_dialogue.enabled = True
+
+                # Change the state to the waiting for input state.
+                self.fight_state = self.FIGHT_WAITING_INPUT
+
+                # Select the ACT button.
+                self.fight_background.load("lostlevels/assets/sprites/seymour_skinner_encounter.png")
+                self.fight_background.set_size(engine.ui.UDim2(1, 0, 1, 0))
+
+            # Is the player singing?
+            elif self.fight_state == self.FIGHT_SINGING:
+                # Animate the player's character until the player gets
+                # close to Seymour, then stop the character.
+                timestamp = time.perf_counter()
+                if (timestamp - self.fight_freeman_animation_timestamp > 0.15
+                    and self.fight_freeman.velocity.x > 0):
+                    self.fight_freeman_animation_timestamp = timestamp
+                    self.fight_freeman.index = (self.fight_freeman.index + 1) % 2
+                if self.fight_freeman.get_baseorigin().x > self._level.camoffset + 125:
+                    self.fight_freeman.velocity = pygame.math.Vector2(0, 0)
+                    self.fight_freeman.set_baseorigin(
+                        pygame.math.Vector2(self._level.camoffset + 125, -152))
+                    self.fight_freeman.index = 0
+
+            # Clear any beams that have long left the screen.
+            for beam in self.fight_beams:
+                if beam.get_topleft().x > self._level.camoffset + 576 or beam.get_bottomleft().y > 0:
+                    self._engine.delete_entity(beam)
+            self.fight_beams[:] = [beam for beam in self.fight_beams if beam.draw]
+
+    # Manage Seymour's speech dialogue.
+    def manage_seymour_speech(self):
+        # Ensure the speech dialogue is enabled.
+        self.seymour_dialogue.enabled = True
+        self.upper_dialogue_cover.enabled = True
+        self.lower_dialogue_cover.enabled = True
+
+        # Move the black bars out of the way to reveal another character of the speech
+        # dialogue.
+        self.seymour_speech_tick += 1
+        self.upper_dialogue_cover.set_position(engine.ui.UDim2(
+            0, 218 + self.seymour_speech_tick * 16, 0, 58))
+        self.upper_dialogue_cover.set_size(engine.ui.UDim2(
+            0, 250 - self.seymour_speech_tick * 16, 0, 20))
+        self.lower_dialogue_cover.set_position(engine.ui.UDim2(
+            0, 218 + max(0, (self.seymour_speech_tick - 15) * 16), 0, 94))
+        self.lower_dialogue_cover.set_size(engine.ui.UDim2(
+            0, 250 - max(0, (self.seymour_speech_tick - 15) * 16), 0, 20))
+
+        # Call this method again later to reveal more of the speech dialogue, until the
+        # entire dialogue has been revealed.
+        if self.seymour_speech_tick < 35:
+            self._engine.create_timer(Level13_cave.manage_seymour_speech, 0.15, self)
+
+        # After some time, hide the dialogue and set a timer for the main fighting
+        # sequence.
+        else:
+            self.seymour_dialogue.enabled = False
+            self.upper_dialogue_cover.enabled = False
+            self.lower_dialogue_cover.enabled = False
+            self._engine.create_timer(Level13_cave.initialise_fight, 2, self)
+
+    # Initialise the fighting sequence before launching the player straight into the
+    # fight.
+    def initialise_fight(self):
+        # Hide parts of the visible world and anchor the player.
+        for ent in self.ground:
+            ent.draw = False
+        self.trees.draw = False
+        self._level.player.movetype = engine.entity.MOVETYPE_NONE
+
+        # Stop playing the track accompanying Seymour's introduction.
+        self.seymour_speech.stop()
+
+        # Uncover the fog.
+        self._fog.enabled = False
+
+        # Play the Undertale heart shattering sound effect.
+        shatter = self._engine.create_sound(
+            "lostlevels/assets/audio/objects/undertale_heart_shatter.ogg")
+        shatter.volume = 1
+        shatter.play()
+
+        # Time the "eye flash" effect.
+        self._engine.create_timer(Level13_cave.eye_flash, 1.5, self)
+
+    # "Eye flash" effect immediately prior to the fight.
+    def eye_flash(self):
+        # Play the eye flash sound effect.
+        flash = self._engine.create_sound("lostlevels/assets/audio/objects/undertale_eye_flash.ogg")
+        flash.volume = 1
+        flash.play()
+
+        # Create a fade-in effect that transitions into the fight.
+        self.fade_in = effects.create_fade_in_screen(self._engine, 50)
+
+        # Time the beginning of the fight.
+        self._engine.create_timer(Level13_cave.start_fight, 1.5, self)
+
+    # Begin the Undertale-themed fight against Seymour.
+    def start_fight(self):
+        # Hide the player and Seymour sprites and delete the fade-in UI element.
+        self._engine.delete_ui_element(self.fade_in)
+        self._level.player.draw = False
+        self.seymour.draw = False 
+
+        # Start playing ASGORE's theme.
+        self.asgore_theme.play(True)
+
+        # Create the background for the fight. These use rectangle entities for
+        # handling basic collision with the player.
+        self.fight_background = self._engine.create_ui_element_by_class("image", 
+                                                                        engine.ui.LAYER_BACKGROUND)
+        self.fight_background.load("lostlevels/assets/sprites/seymour_skinner_encounter.png")
+        self.fight_background.set_size(engine.ui.UDim2(1, 0, 1, 0))
+        self.fight_background.enabled = True
+        self.fight_asterisk = self._engine.create_ui_element_by_class("image")
+        self.fight_asterisk.load("lostlevels/assets/sprites/undertale_asterisk.png")
+        self.fight_asterisk.set_size(engine.ui.UDim2(0, 16, 0, 10))
+        self.fight_asterisk.set_position(engine.ui.UDim2(0, 52, 0, 282))
+        self.fight_asterisk.enabled = True
+        self.fight_seymour = self._engine.create_ui_element_by_class("image")
+        self.fight_seymour.load("lostlevels/assets/sprites/seymour_skinner_undertale_full.png")
+        self.fight_seymour.set_size(engine.ui.UDim2(0, 75, 0, 192))
+        self.fight_seymour.set_position(engine.ui.UDim2(0.5, -38, 0, 35))
+        self.fight_seymour.enabled = True
+        self.fight_player_dialogue = self._engine.create_ui_element_by_class("image")
+        self.fight_player_dialogue.load("lostlevels/assets/sprites/player_undertale_speech.png")
+        self.fight_player_dialogue.set_size(engine.ui.UDim2(0, 317, 0, 58))
+        self.fight_player_dialogue.set_position(engine.ui.UDim2(0, 84, 0, 278))
+        self.fight_player_dialogue.enabled = True
+        self.fight_left_bar = self._engine.create_entity_by_class("rect")
+        self.fight_left_bar.colour = pygame.Color(255, 255, 255, 255)
+        self.fight_left_bar.set_hitbox(pygame.math.Vector2(5, 140))
+        self.fight_left_bar.set_baseorigin(pygame.math.Vector2(32 + self._level.camoffset, -250))
+        self.fight_left_bar.movetype = engine.entity.MOVETYPE_CUSTOM
+        self.fight_right_bar = self._engine.create_entity_by_class("rect")
+        self.fight_right_bar.colour = pygame.Color(255, 255, 255, 255)
+        self.fight_right_bar.set_hitbox(pygame.math.Vector2(5, 140))
+        self.fight_right_bar.set_baseorigin(pygame.math.Vector2(537 + self._level.camoffset, -250))
+        self.fight_right_bar.movetype = engine.entity.MOVETYPE_CUSTOM
+        self.fight_top_bar = self._engine.create_entity_by_class("rect")
+        self.fight_top_bar.colour = pygame.Color(255, 255, 255, 255)
+        self.fight_top_bar.set_hitbox(pygame.math.Vector2(501, 5))
+        self.fight_top_bar.set_baseorigin(pygame.math.Vector2(37 + self._level.camoffset, -250))
+        self.fight_top_bar.movetype = engine.entity.MOVETYPE_CUSTOM
+        self.fight_bottom_bar = self._engine.create_entity_by_class("rect")
+        self.fight_bottom_bar.colour = pygame.Color(255, 255, 255, 255)
+        self.fight_bottom_bar.set_hitbox(pygame.math.Vector2(501, 5))
+        self.fight_bottom_bar.set_baseorigin(pygame.math.Vector2(37 + self._level.camoffset, -385))
+        self.fight_bottom_bar.movetype = engine.entity.MOVETYPE_CUSTOM
+        self.manage_player_speech(20, 10)
+
+        # Construct the rest of the fight UI that shouldn't be visible yet.
+        self.fight_player_enemy_select = self._engine.create_ui_element_by_class("image")
+        self.fight_player_enemy_select.load(
+            "lostlevels/assets/sprites/player_undertale_enemy_select.png")
+        self.fight_player_enemy_select.set_size(engine.ui.UDim2(0, 304, 0, 26))
+        self.fight_player_enemy_select.set_position(engine.ui.UDim2(0, 64, 0, 276))
+        self.fight_player_act_select = self._engine.create_ui_element_by_class("image")
+        self.fight_player_act_select.load("lostlevels/assets/sprites/player_undertale_act_select.png")
+        self.fight_player_act_select.set_size(engine.ui.UDim2(0, 127, 0, 26))
+        self.fight_player_act_select.set_position(engine.ui.UDim2(0, 64, 0, 276))
+        self.fight_player_remember_talk = self._engine.create_ui_element_by_class("image")
+        self.fight_player_remember_talk.load(
+            "lostlevels/assets/sprites/player_undertale_speech_talk.png")
+        self.fight_player_remember_talk.set_size(engine.ui.UDim2(0, 412, 0, 60))
+        self.fight_player_remember_talk.set_position(engine.ui.UDim2(0, 84, 0, 278))
+        self.fight_player = self._engine.create_entity_by_class("sprite")
+        self.fight_player.load("lostlevels/assets/sprites/undertale_soul.png", (16, 16), 1)
+        self.fight_player.set_baseorigin(
+            pygame.math.Vector2(279 + self._level.camoffset, -312))
+        self.fight_player.draw = False
+        self.fight_player.gravity = 0
+        self.fight_player.friction = 0
+        self.fight_player.identifier = "player_soul"
+        self.fight_freeman = self._engine.create_entity_by_class("sprite")
+        self.fight_freeman.load("lostlevels/assets/sprites/player_undertale_full.png", (24, 58), 2)
+        self.fight_freeman.set_baseorigin(
+            pygame.math.Vector2(-24 + self._level.camoffset, -152))
+        self.fight_freeman.movetype = engine.entity.MOVETYPE_CUSTOM
+        self.fight_freeman.draw = False
+
+        # Toggle the fight started counter.
+        self.fight_started = True
+        self.fight_state = self.FIGHT_WAITING_INPUT
+
+    # Manage the player's speech dialogue.
+    def manage_player_speech(self, top_ticks, bottom_ticks, first_time = True):
+        # If this is the first time, the bars need to be re-created so that they are 
+        # on top of the current text.
+        if first_time:
+            self.fight_player_speech_tick = 0
+            self.fight_player_upper_dialogue_cover = self._engine.create_ui_element_by_class("frame")
+            self.fight_player_upper_dialogue_cover.set_size(engine.ui.UDim2(0, 425, 0, 30))
+            self.fight_player_upper_dialogue_cover.set_position(engine.ui.UDim2(0, 84, 0, 278))
+            self.fight_player_upper_dialogue_cover.enabled = True
+            self.fight_player_lower_dialogue_cover = self._engine.create_ui_element_by_class("frame")
+            self.fight_player_lower_dialogue_cover.set_size(engine.ui.UDim2(0, 425, 0, 30))
+            self.fight_player_lower_dialogue_cover.set_position(engine.ui.UDim2(0, 84, 0, 312))
+            self.fight_player_lower_dialogue_cover.enabled = True
+
+        # Move the black bars out of the way to reveal another character of the speech
+        # dialogue.
+        self.fight_player_speech_tick += 1
+        self.fight_player_upper_dialogue_cover.set_position(engine.ui.UDim2(
+            0, 84 + self.fight_player_speech_tick * 16, 0, 278))
+        self.fight_player_upper_dialogue_cover.set_size(engine.ui.UDim2(
+            0, 425 - self.fight_player_speech_tick * 16, 0, 30))
+        self.fight_player_lower_dialogue_cover.set_position(engine.ui.UDim2(
+            0, 84 + max(0, (self.fight_player_speech_tick - top_ticks) * 16), 0, 312))
+        self.fight_player_lower_dialogue_cover.set_size(engine.ui.UDim2(
+            0, 425 - max(0, (self.fight_player_speech_tick - top_ticks) * 16), 0, 30))
+
+        # Play a message sound effect after each character is revealed.
+        message_sfx = self._engine.create_sound(
+            "lostlevels/assets/audio/objects/undertale_message.ogg")
+        message_sfx.volume = 1
+        message_sfx.play()
+        
+        # Call this method again later to reveal more of the speech dialogue, until the
+        # entire dialogue has been revealed.
+        if self.fight_player_speech_tick < top_ticks + bottom_ticks:
+            self._engine.create_timer(Level13_cave.manage_player_speech, 0.032, 
+                                      self, 
+                                      top_ticks, 
+                                      bottom_ticks,
+                                      False)
+        else:
+            self._engine.delete_ui_element(self.fight_player_upper_dialogue_cover)
+            self._engine.delete_ui_element(self.fight_player_lower_dialogue_cover)
+
+    # Play the select sound effect.
+    def play_select_sfx(self):
+        select_sfx = self._engine.create_sound(
+            "lostlevels/assets/audio/objects/undertale_select.ogg")
+        select_sfx.volume = 1
+        select_sfx.play()
+
+    # Handle user input.
+    def keydown(self, enum, unicode, focused):
+        # Ignore key inputs that aren't the space key.
+        if enum != pygame.K_SPACE:
+            return
+
+        # Are we currently waiting for the player to choose how they will interact with
+        # Seymour?
+        if self.fight_state == self.FIGHT_WAITING_INPUT:
+            # If the dialogue has not been fully read, uncover it fully first.
+            if self.fight_player_speech_tick < 30:
+                self.fight_player_speech_tick = 30
+                return
+
+            # Since the only option is to ACT, continue on to enemy selection.
+            else:
+                # Change the state to the selecting enemy state.
+                self.fight_state = self.FIGHT_SELECTING_ENEMY
+
+                # Update the UI.
+                self.fight_asterisk.enabled = False
+                self.fight_player_dialogue.enabled = False
+                self.fight_player_enemy_select.enabled = True
+
+                # Remove the heart icon from the ACT button.
+                self.fight_background.load(
+                    "lostlevels/assets/sprites/seymour_skinner_encounter_choosing_act.png")
+                self.fight_background.set_size(engine.ui.UDim2(1, 0, 1, 0))
+
+                # Play the input sound effect.
+                self.play_select_sfx()
+
+        # Are we currently waiting for the player to select an enemy?
+        elif self.fight_state == self.FIGHT_SELECTING_ENEMY:
+            # Change the state to the selecting action state.
+            self.fight_state = self.FIGHT_SELECTING_ACTION
+
+            # Update the UI.
+            self.fight_player_enemy_select.enabled = False
+            self.fight_player_act_select.enabled = True
+
+            # Play the input sound effect.
+            self.play_select_sfx()
+
+        # Are we currently waiting for the player to select an action?
+        elif self.fight_state == self.FIGHT_SELECTING_ACTION:
+            # Is the player able to sing?
+            if self.fight_can_sing:
+                # Change the state to the singing state.
+                self.fight_state = self.FIGHT_SINGING
+
+                # Update the UI.
+                self.fight_freeman.velocity = pygame.math.Vector2(75, 0)
+                self.fight_freeman.draw = True
+
+                # Start playing Coldplay - My Universe.
+                self.my_universe.play()
+
+                # Create timers for stopping ASGORE's theme, changing Seymour's 
+                # emotion and making Seymour explode.
+                self._engine.create_timer(lambda: self.asgore_theme.stop(), 2.3)
+                self._engine.create_timer(Level13_cave.update_seymour_emotion, 3.0, self)
+                self._engine.create_timer(Level13_cave.explode_seymour, 4.60, self)
+
+            # Tell the player that they just remembered how to speak (referring to
+            # Gordon Freeman being a silent protagonist).
+            else:
+                # Change the state to the remembering how to speak state.
+                self.fight_state = self.FIGHT_REMEMBERING_HOW_TO_SPEAK
+                self.fight_can_sing = True
+
+                # Update the UI.
+                self.fight_player_remember_talk.enabled = True
+                self.fight_asterisk.enabled = True
+                self.manage_player_speech(26, 11)
+
+            # Disable the action selection UI.
+            self.fight_player_act_select.enabled = False
+
+            # Deselect the ACT button.
+            self.fight_background.load(
+                "lostlevels/assets/sprites/seymour_skinner_encounter_act_selected.png")
+            self.fight_background.set_size(engine.ui.UDim2(1, 0, 1, 0))
+
+            # Play the input sound effect.
+            self.play_select_sfx()
+
+        # Are we currently waiting for the player to respond to the remembering
+        # how to speak prompt?
+        elif self.fight_state == self.FIGHT_REMEMBERING_HOW_TO_SPEAK:
+            # If the dialogue has not been fully read, uncover it fully first.
+            if self.fight_player_speech_tick < 37:
+                self.fight_player_speech_tick = 37
+                return
+
+            # Since the only option is to ACT, continue on to enemy selection.
+            else:
+                # Change the state to the combatting enemy state.
+                self.fight_state = self.FIGHT_COMBAT
+
+                # Update the UI.
+                self.fight_asterisk.enabled = False
+                self.fight_player_remember_talk.enabled = False
+
+                # Resize the box.
+                self.fight_box_width = 140
+
+                # Create timers for Seymour's attack and going back to the waiting
+                # for input state.
+                self._engine.create_timer(Level13_cave.shoot_beams, 1.0, self)
+                self._engine.create_timer(Level13_cave.finish_shooting_beams, 3.25, self)
+
+                # Play the input sound effect.
+                self.play_select_sfx()
+
+    # Shoot some beams.
+    def shoot_beams(self, first_time = True):
+        # If the player entity is deleted, stop shooting beams.
+        if not self._level.player.alive or self._level.player.deleted:
+            return
+
+        # Beam constructor.
+        def create_beam(size, velocity, origin):
+            # Beam: kill the player if the beam collides into them.
+            def collision(self_beam, other, coltype, coldir):
+                # If the other entity is not the player's soul, ignore collision.
+                if other.identifier != "player_soul":
+                    return False
+
+                # Kill the player.
+                self._level.death()
+
+                # Ignore collision anyway so that the beam can continue flying.
+                return False
+
+            # Create the beam entity.
+            beam = self._engine.create_entity_by_class("rect")
+            beam.set_baseorigin(origin)
+            beam.set_hitbox(size)
+            beam.velocity = velocity
+            beam.colour = pygame.Color(255, 255, 255, 255)
+            beam.movetype = engine.entity.MOVETYPE_CUSTOM
+            beam.get_event("collision").set_func(collision)
+            self.fight_beams.append(beam)
+            return beam
+
+        # If this is the first time, reset the beams tick counter and create some beams.
+        if first_time:
+            # Reset the beams tick counter.
+            self.fight_beams_tick = 0
+
+            # Create a larger beam to catch out players who hide away in the left
+            # half of the box.
+            create_beam(pygame.math.Vector2(100, 100), 
+                        pygame.math.Vector2(0, -2000),
+                        pygame.math.Vector2(222 + self._level.camoffset, 100))
+
+            # Create another larger beam to catch out players who hide away in the
+            # bottom-right half of the box.
+            create_beam(pygame.math.Vector2(100, 75), 
+                        pygame.math.Vector2(2000, 0),
+                        pygame.math.Vector2(-100 + self._level.camoffset, -310))
+
+            # Play the Undertale Gaster Blaster sound effect.
+            blaster = self._engine.create_sound(
+                "lostlevels/assets/audio/objects/undertale_gaster_blaster.ogg")
+            blaster.volume = 1
+            blaster.play()
+
+        # If the fight beams tick counter is between 2 and 22, shoot horizontal beams from
+        # the left.
+        if self.fight_beams_tick >= 2 and self.fight_beams_tick < 22:
+            # On tick 2, play the Undertale rainbow beam sound effect.
+            if self.fight_beams_tick == 2:
+                beam = self._engine.create_sound(
+                    "lostlevels/assets/audio/objects/undertale_rainbowbeam.ogg")
+                beam.volume = 1
+                beam.play()
+
+            # Create the beam. 
+            create_beam(pygame.math.Vector2(100, 10), 
+                        pygame.math.Vector2(5000, -500),
+                        pygame.math.Vector2(
+                            -100 + self._level.camoffset, -215 - self.fight_beams_tick * 5))
+
+        # If the fight beams tick counter is between 27 and 35, shoot beams from
+        # below.
+        elif self.fight_beams_tick >= 27 and self.fight_beams_tick < 35:
+            create_beam(pygame.math.Vector2(10, 100), 
+                        pygame.math.Vector2(0, 5000),
+                        pygame.math.Vector2(
+                            222 + self._level.camoffset + (self.fight_beams_tick - 27) * 10, -480))
+
+        # If the fight beams tick counter is 39, shoot a final beam from below
+        # right at right-most corner of the box to trick the player.
+        elif self.fight_beams_tick == 39:
+            create_beam(pygame.math.Vector2(10, 100), 
+                        pygame.math.Vector2(0, 5000),
+                        pygame.math.Vector2(336 + self._level.camoffset, -480))
+
+        # Call this function again later for shooting more beams.
+        self.fight_beams_tick += 1
+        if self.fight_beams_tick < 40:
+            self._engine.create_timer(Level13_cave.shoot_beams, 0.05, self, False)
+
+    # Finish shooting beams.
+    def finish_shooting_beams(self):
+        if self._level.player.alive and not self._level.player.deleted:
+            self.fight_state = self.FIGHT_BACK_TO_WAITING_INPUT
+            self.fight_box_width = 511
+            self.fight_player.draw = False
+
+    # Update Seymour's emotion to make himshocked.
+    def update_seymour_emotion(self):
+        self.fight_seymour.load("lostlevels/assets/sprites/seymour_skinner_undertale_full_shocked.png")
+        self.fight_seymour.set_size(engine.ui.UDim2(0, 75, 0, 192))
+        self.fight_move_seymour = False
+
+    # Make Seymour explode.
+    def explode_seymour(self):
+        # Create the explosion effect.
+        self._engine.delete_ui_element(self.fight_seymour)
+        self.explosion.play()
+        self.fight_flash_bang = effects.create_flash_bang(self._engine)
+
+        # Stop playing Coldplay - My Universe.
+        self.my_universe.stop()
+
+        # Conclude the battle after a few seconds.
+        self._engine.create_timer(Level13_cave.finish_battle, 4.0, self)
+
+    # Finish the Undertale battle and delete its UI.
+    def finish_battle(self):
+        # Change the state to the fight ended state.
+        self.fight_state = self.FIGHT_ENDED
+        
+        # Reveal the player, world and scoreboard.
+        self._level.player.draw = True
+        for ent in self.ground:
+            ent.draw = True
+        self.trees.draw = True
+        self._level.toggle_scoreboard(True)
+
+        # Delete the UI elements and entities for the battle scene.
+        if self.fight_started:
+            self._engine.delete_ui_element(self.fight_background)
+            self._engine.delete_ui_element(self.fight_asterisk)     
+            self._engine.delete_ui_element(self.fight_seymour)
+            self._engine.delete_ui_element(self.fight_player_dialogue)
+            self._engine.delete_ui_element(self.fight_player_enemy_select)
+            self._engine.delete_ui_element(self.fight_player_act_select)
+            self._engine.delete_ui_element(self.fight_player_remember_talk)
+            self._engine.delete_entity(self.fight_left_bar)
+            self._engine.delete_entity(self.fight_right_bar)
+            self._engine.delete_entity(self.fight_top_bar)
+            self._engine.delete_entity(self.fight_bottom_bar)
+            self._engine.delete_entity(self.fight_player)
+            self._engine.delete_entity(self.fight_freeman)
+
+        # Reset the scoreboard timer and player movement.
+        self._level.time_remaining = self.cached_time_remaining
+        self._level.player.movetype = engine.entity.MOVETYPE_PHYSICS
+        if self._level.player.alive:
+            self._level.player.acceleration = 6.5
+            self._level.player.can_jump = True
+            self._level.player.can_sprint = True
+            self._level.player.moveable = True
+            self._level.player.always_animate = False
+            self._level.can_scroll_left = False
+
+        # If the flash bang effect is still showing, stop it early for comedic
+        # effect.
+        self.explosion.stop()
+        if self.fight_flash_bang:
+            self._engine.delete_ui_element(self.fight_flash_bang)
+
+    # Stop playing the ASGORE theme when the player dies, and reveal the player
+    # and world again.
+    def player_killed(self):
+        # Stop playing the ASGORE theme.
+        self.asgore_theme.stop()
+
+        # Finish the battle.
+        self.finish_battle()
+
+    # Stop playing the longer soundtracks.
+    def level_finish(self):
+        self.seymour_speech.stop()
+        self.asgore_theme.stop()
+        self.my_universe.stop()
+
 # Return a path to the image preview of this level.
 def get_preview():
     return "engine/assets/missing.png"
@@ -365,6 +1075,8 @@ def load_leveldata(eng: engine.LLEngine,
                    first_load: bool):
     global biome_music_suffix
     global holding_key
+    global has_used_key
+    global unlocked_cave_door
     global world_1_1_module
 
     # Extract the biome and section information from the section name. Verify the
@@ -374,16 +1086,18 @@ def load_leveldata(eng: engine.LLEngine,
     if len(split) == 2:
         biome, name = split
     else:
-        biome, name = "winter", split[0]
+        biome, name = ("cave" if unlocked_cave_door else "winter"), split[0]
     
     # Only create the level generator if we are not forwarding level generation to
     # the world 1-1 module.
     gen = levelgenerator.LevelGenerator(eng, level, biome)
 
     # If this is the player's first life playing this level, reset the biome music
-    # suffix.
+    # suffix and the has used key and unlocked cave door toggles.
     if first_life:
         biome_music_suffix = ""
+        has_used_key = False
+        unlocked_cave_door = False
 
     # If this is not the player's first life playing this level and the higher
     # power has been achieved, replace the player's death sound with a snippet
@@ -392,14 +1106,23 @@ def load_leveldata(eng: engine.LLEngine,
         level.player.death_sound = eng.create_sound("lostlevels/assets/audio/player/death_coldplay.ogg")
         level.player.death_sound.volume = 1
 
-    # If the level has loaded for the first time for the player's current life,
-    # reset the holding key counter.
-    if first_load:
+    # If the level has loaded for the first time for the player's current life
+    # and the player has not used the key before, reset the holding key counter.
+    if first_load and not has_used_key:
         holding_key = False
 
     # Preload the world 1-1 module.
     if world_1_1_module == None:
         world_1_1_module = lostlevels.scenes.LoadingLevel.load_level_module(1, 1)
+
+    # Nested function for untoggling the holding key and used key counters when
+    # using a door.
+    def door_used():
+        global holding_key
+        global has_used_key
+        holding_key = False
+        has_used_key = True
+        return engine.Event.DETOUR_CONTINUE
 
     # Nested function for creating the SMB2 key that the player can hold.
     def create_smb2_key(hold = False, before_entity = None):
@@ -438,6 +1161,10 @@ def load_leveldata(eng: engine.LLEngine,
         else:
             key.get_event("use").set_func(lambda self: key_use())
 
+    # Spawn the key if it is being held.
+    if holding_key:
+        create_smb2_key(True, None)
+
     # Is this the main section?
     if name == "1.3.main":
         # Create the level data for this section.
@@ -469,7 +1196,7 @@ def load_leveldata(eng: engine.LLEngine,
             (f"{biome}_higherpower", None),
             (f"{biome}_goombas", None),
             (f"1.1.main", None),
-            (f"{biome}_goombas", None)
+            (f"cave_inside_cave" if unlocked_cave_door else "cave_door", None)
         ]
         for i in range(0, 8):
             # Create the pipe for the given index.
@@ -547,48 +1274,11 @@ def load_leveldata(eng: engine.LLEngine,
         gen.generate_koopa(pygame.math.Vector2(832, -368))
 
         # Add a fake SMB2-like door that leads to a fake underground section
-        door = eng.create_entity_by_class("sprite", eng.entity_head())
-        door.load("lostlevels/assets/sprites/smb2_door.png", (32, 64), 1)
-        door.movetype = engine.entity.MOVETYPE_NONE
-        door.set_baseorigin(pygame.math.Vector2(992, -352))
-        door.can_use = holding_key
-        door.use_dist = 10
-
-        # SMB2 door: open the door if the player has the key.
-        def door_use():
-            global holding_key
-
-            # Load the fake underground section after 1.5 seconds.
-            def load_newsection():
-                # Check that the door entity still exists.
-                if door.deleted:
-                    return
-                
-                # Check that the player is stil alive.
-                if not level.player.alive:
-                    return
-                
-                # Load the new level section.
-                level.load_newlevel("underground_fake_underground", 
-                                    pygame.math.Vector2(64, -350), 
-                                    level.time_remaining)
-
-            # Untoggle the holding key counter.
-            holding_key = False
-
-            # Create a 1.5-second timer for loading the fake underground section.
-            level.player.can_die = False
-            eng.delete_entity(level.player)
-            eng.create_timer(load_newsection, 1.5)
-
-            # Hide the door to create the impression it has been opened.
-            door.draw = False
-
-            # Play a sound effect for entering the door.
-            door_sound = eng.create_sound("lostlevels/assets/audio/objects/door_open.ogg")
-            door_sound.volume = 1
-            door_sound.play()
-        door.get_event("use").set_func(lambda self: door_use())
+        door = gen.generate_door(pygame.math.Vector2(992, -352), 
+                                 "underground_fake_underground",
+                                 pygame.math.Vector2(64, -350),
+                                 holding_key)
+        door.get_event("entered").hook(lambda self, name, returnValue: door_used())
 
         # Add a fake SMB2-like hill to accompany the door.
         smb2 = eng.create_entity_by_class("sprite", eng.entity_head())
@@ -613,8 +1303,7 @@ def load_leveldata(eng: engine.LLEngine,
         # Create a wall beyond the door as well so that the player cannot progress beyond the map.
         gen.generate_ground(pygame.math.Vector2(1116, 0), height = 15)
         
-        # If the player came out of the jar section pipe with a key, spawn a 1996 Stock train 
-        # and the key.
+        # If the player came out of the jar section pipe with a key, spawn a 1996 Stock train.
         if holding_key:
             # Spawn the train.
             train = eng.create_entity_by_class("sprite")
@@ -631,9 +1320,6 @@ def load_leveldata(eng: engine.LLEngine,
             motors = eng.create_sound("lostlevels/assets/audio/objects/1996_stock_rolling.ogg")
             motors.volume = 1
             motors.play()
-
-            # Spawn the key.
-            create_smb2_key(True, None)
 
         # Return the level data generated for this section.
         return data
@@ -712,6 +1398,7 @@ def load_leveldata(eng: engine.LLEngine,
         boss = eng.create_entity_by_class("dr_house")
         boss.set_baseorigin(pygame.math.Vector2(416, 0))
         boss.level = level
+        boss.pounce_immediately = holding_key
         data.boss = boss
 
         # Create a temporary wall that prevents the player from running from the boss.
@@ -812,8 +1499,98 @@ def load_leveldata(eng: engine.LLEngine,
 
         # Return the level data generated for this section.
         return data
+
+    # Is this the cave entrance section?
+    elif name == "door":
+        # Create the level data for this section.
+        data = Level13_main(eng, level, pygame.math.Vector2(74, -358), biome)
+
+        # Stop the map from scrolling.
+        level.max_scroll = 0
+
+        # Create the ground.
+        gen.generate_ground(pygame.math.Vector2(0, -416), 18, 2)
+
+        # Create some walls for the cave.
+        gen.generate_ground(pygame.math.Vector2(0, 0), height = 11)
+        gen.generate_ground(pygame.math.Vector2(576, 0), height = 15)
+
+        # Create a pipe that lets the player go back to the beginning of the level.
+        # The biome of the beginning of the level will also be the cave biome.
+        gen.generate_pipe_body(pygame.math.Vector2(0, -352), orientation = lostlevels.sprites.PIPE_90)
+        gen.generate_pipe_top(pygame.math.Vector2(32, -352), 
+                              lostlevels.sprites.PIPE_90, 
+                              f"{biome}_1.3.main")
+
+        # If the player achieved the higher power, create a door that the player can enter 
+        # to the next section if they are also holding a key.
+        if biome_music_suffix == "_coldplay":
+            door = gen.generate_door(pygame.math.Vector2(512, -352), 
+                                     "cave_inside_cave",
+                                     pygame.math.Vector2(3, -358),
+                                     holding_key)
+            door.get_event("entered").hook(lambda self, name, returnValue: door_used())
+
+        # Return the level data for this section.
+        return data
+
+    # Is this the inside entrance section?
+    elif name == "inside_cave":
+        # Create the level data for this section.
+        data = Level13_cave(eng, level, pygame.math.Vector2(3, -358), biome)
+
+        # Allow the player to scroll leftwards.
+        level.can_scroll_left = True
+
+        # Prevent the player from being able to jump or sprint, but make them accelerate
+        # faster.
+        level.player.acceleration = 20.0
+        level.player.can_jump = False
+        level.player.can_sprint = False
+
+        # Create the ground.
+        data.ground = gen.generate_ground(pygame.math.Vector2(0, -416), 40, 2)
+
+        # Create an unusable door that the player spawns out of.
+        gen.generate_door(pygame.math.Vector2(0, -352))
+
+        # Create some walls for the cave.
+        gen.generate_blocks(pygame.math.Vector2(0, 0), height = 11)
+        gen.generate_blocks(pygame.math.Vector2(1280, 0), height = 15)
+
+        # Create some trees sampled from Undertale's Snowdin.
+        # TODO: re-write entity activation code in level scene so that I don't have to
+        # manually activate entities like this or 1996 Stock?
+        trees = eng.create_entity_by_class("sprite", eng.entity_head())
+        trees.load("lostlevels/assets/sprites/undertale_snowdin_trees.png", (1280, 120), 1)
+        trees.set_baseorigin(pygame.math.Vector2(0, -296))
+        trees.movetype = engine.entity.MOVETYPE_NONE
+        eng.activate_entity(trees)
+        data.trees = trees
+
+        # Create Seymour Skinner.
+        seymour = eng.create_entity_by_class("sprite")
+        seymour.load("lostlevels/assets/sprites/seymour_skinner.png", (50, 128), 1)
+        seymour.set_baseorigin(pygame.math.Vector2(896, -288))
+        seymour.movetype = engine.entity.MOVETYPE_NONE
+        data.seymour = seymour
+
+        # Create a pipe after Seymour Skinner that takes the player to the first flagpole
+        # in the end-of-level section.
+        gen.generate_pipe_body(pygame.math.Vector2(1216, -384))
+        gen.generate_pipe_top(pygame.math.Vector2(1216, -352), section = f"winter_end",
+                              player_offset = pygame.math.Vector2(1290, 0))
+
+        # Toggle the unlocked cave door counter.
+        unlocked_cave_door = True
+
+        # Prevent the level from scrolling beyond the pipe at the end.
+        level.max_scroll = 704
+
+        # Return the level data for this section.
+        return data
     
-    # Is this the end-of-level selection?
+    # Is this the end-of-level section?
     elif name == "end":
         # Create the level data for this section.
         data = Level13_main(eng, level, pygame.math.Vector2(52, 0), biome)

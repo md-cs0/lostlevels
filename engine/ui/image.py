@@ -58,7 +58,7 @@ class Image(element.Element):
 
     # Flip this image.
     def flip(self, flip_x = False, flip_y = False):
-        self.__texture = pygame.transform.flip(self.__texture, flip_x, flip_y)
+        self.__texture = pygame.transform.flip(self.__image, flip_x, flip_y)
 
     # Draw this frame.
     def draw_image(self, screen):

@@ -56,8 +56,8 @@ class FlagPole(engine.entity.Sprite):
         # to handle final collision so that the player can conclude climbing.
         self.movetype = engine.entity.MOVETYPE_NONE
         other.climbed_flagpole = True
-        other.climbing = self
         other.climb_velocity = -200
+        other.set_climbing(self)
         other.get_event("collisionfinal").hook(handle_flagpole_collision)
 
 # Call the player's Player::finish_level() method.

@@ -273,7 +273,7 @@ class LLPhysics():
     def per_frame(self):
         # Walk through each entity in the engine's entity list.
         ent = self.__engine.entity_head()
-        while (ent):
+        while ent:
             # Skip if this entity is deactivated.
             if not ent.active:
                 ent = ent.next
@@ -291,7 +291,7 @@ class LLPhysics():
             # MOVETYPE_PHYSICS.
             if ent.movetype == entity.MOVETYPE_PHYSICS:
                 # Inflict gravity upon this entity.
-                ent.velocity.y -= self.__gravity.get() * self.__engine.globals.frametime
+                ent.velocity.y -= self.__gravity.get() * ent.gravity * self.__engine.globals.frametime
 
                 # Handle friction. This is done through multiplication in order to handle
                 #  +/- numbers, mathematically.

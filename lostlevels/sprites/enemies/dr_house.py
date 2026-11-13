@@ -23,6 +23,9 @@ class DrHouse(EnemyBase):
         # Load the Dr. House spritesheet.
         self.load("lostlevels/assets/sprites/dr_house.png", (86, 129), 1)
 
+        # Configure whether Dr. House should pounce immediately.
+        self.pounce_immediately = False
+
         # Name this entity for demo recordings.
         self.identifier = "lupus"
         
@@ -42,12 +45,12 @@ class DrHouse(EnemyBase):
             # Randomly select an action.
             choice = random.randint(1, 20)
             event = ""
-            if 15 <= choice < 19:
-                event = "action_move"
-                self.action_move()
-            elif choice == 20:
+            if choice == 20 or self.pounce_immediately:
                 event = "action_pounceattack"
                 self.action_pounceattack()
+            elif 15 <= choice < 19:
+                event = "action_move"
+                self.action_move()
             
             # If an action was selected, create a demo event object to mark it.
             demo = self.level.get_demo()

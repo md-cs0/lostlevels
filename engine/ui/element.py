@@ -56,8 +56,8 @@ class Element():
     # Set the size of this element.
     def set_size(self, udim2):
         self.__size = udim2
-        self._rect.width = self._engine.game_width.get() * udim2.x.scale + udim2.x.offset
-        self._rect.height = self._engine.game_height.get() * udim2.y.scale + udim2.y.offset
+        self._rect.width = max(0, self._engine.game_width.get() * udim2.x.scale + udim2.x.offset)
+        self._rect.height = max(0, self._engine.game_height.get() * udim2.y.scale + udim2.y.offset)
 
     # Retrieve an event from this element.
     def get_event(self, name):

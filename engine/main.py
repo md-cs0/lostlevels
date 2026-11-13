@@ -43,6 +43,9 @@ class LLEngine():
         sound.Sound.cached_sample_rate = mixer_init[0]
         sound.Sound.num_channels = mixer_init[2]
 
+        # Increase the number of audio channels that can be played simultaneously.
+        pygame.mixer.set_num_channels(64)
+
         # Initiate engine-specific data.
         self.globals = globals.GlobalVars()
         self.console = logger.Logger("Console")

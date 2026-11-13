@@ -82,6 +82,7 @@ class LostLevels(engine.Game):
         self._engine.register_classname("flagpole", sprites.FlagPole)
         self._engine.register_classname("checkpoint", sprites.Checkpoint)
         self._engine.register_classname("animated_character", sprites.AnimatedCharacter)
+        self._engine.register_classname("door", sprites.Door)
         self._engine.register_classname("mushroom_base", sprites.powerups.MushroomBase)
         self._engine.register_classname("glitch_powerup", sprites.powerups.GlitchPowerup)
         self._engine.register_classname("death_cap", sprites.powerups.DeathCap)
@@ -195,10 +196,14 @@ class LostLevels(engine.Game):
             if self.timebox and self.__sceneindex == SCENE_LEVEL:
                 self.timebox.set_text(f"TIME\n{self.__scene.time_remaining:.0f}")
 
-        # If this is the 2nd frame, start pre-loading all images to use for this game.
+        # If this is the 2nd frame, start pre-loading all assets to use for this game.
         # This seems oddly specific, but considering that I would like the pre-loading
         # screen to render first, this is necessary.
         if self._engine.globals.frames == 2:
+            # TODO: pre-load all assets including audio and new assets added since world
+            # 1-2. This should probably be implemented as separate layers e.g. outsource
+            # level-specific pre-loading to future LevelData::preload() method.
+
             # Pre-load all the appropriate tilesheets for this game.
             engine.entity.Tile.preload("lostlevels/assets/world_portals.png")
             engine.entity.Tile.preload("lostlevels/assets/biomes/castle/broken.png")
@@ -409,10 +414,6 @@ class LostLevels(engine.Game):
 
         # Clear all entities.
         self._engine.clear_entities()
-
-        # Load the status bar.
-        self.create_statusbar()
-        self.worldbox.set_text(f"WORLD\n{self.world}-{self.level}")
         
         # Create the level scene and stop the music of the previous level scene,
         # if there is currently one already.
@@ -420,6 +421,14 @@ class LostLevels(engine.Game):
             self.__scene.stop_music()
         self.__sceneindex = SCENE_LEVEL
         self.__scene = scenes.Level(self._engine, self, section, offset, time_remaining, first_time)
+
+        # Load the status bar.
+        # TODO: I moved this below the level scene generation code (see above 
+        # few lines), so that the cave biome fog covers the score bar, however
+        # this feels like a hack. Ideally there could instead be biome-specific 
+        # code for each biome that is called before the status bar is created?
+        self.create_statusbar()
+        self.worldbox.set_text(f"WORLD\n{self.world}-{self.level}")
 
         # If this is the first time and a demo is being recorded, create a demo
         # game call object rather than rely on timestamping.

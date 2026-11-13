@@ -41,6 +41,7 @@ class Entity():
         self.move = 0.00                            # Scalar quantity representing horizontal movement, bound to friction.
         self.friction = 1.00                        # Friction multiplier.
         self.acceleration = 4.5                     # Acceleration multiplier.
+        self.gravity = 1.00                         # Gravity multiplier.
         self.dirty = False                          # Has the origin of the entity changed?
 
         # Entity flags.

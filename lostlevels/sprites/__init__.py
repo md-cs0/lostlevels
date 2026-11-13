@@ -5,6 +5,7 @@ from .moveable import Moveable
 from .flagpole import FlagPole
 from .checkpoint import Checkpoint
 from .animated_character import AnimatedCharacter
+from .door import Door
 from .player import *
 from .pipe_top import *
 from .game_flags import *

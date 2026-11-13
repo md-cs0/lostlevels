@@ -23,6 +23,10 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Apple's Power Macintosh computers for some crash chimes
 - THX for their Deep Note
 - Coldplay for the Higher Power music video
+- Undertale for some SFX, sprites (Snowdin trees) and its style of fighting used for a bossfight in world 1-3
+- The Simpsons arcade game for the spritesheet for Seymour Skinner (modified to feature an angry expression)
+- [Cerulean for the spritesheet for Undertale-themed Seymour Skinner (modifed to feature an angry expression), based on EmeraldHead's Steamed Tales alternative universe (found on Demirramon's Undertale text box generator website)](https://www.demirramon.com/generators/undertale_text_box_generator)
+- [Demirramon's Undertale text box generator for custom Undertale speech boxes](https://www.demirramon.com/generators/undertale_text_box_generator)
 - [Goatmeal for the NES style font](https://fontstruct.com/fontstructions/show/406653/nintendo_nes_font)
 - [Wikimedia for the 1996 Stock diagram](https://commons.wikimedia.org/wiki/File:1996_Stock_Train_Diagram_(7-car).png)
 
@@ -35,3 +39,5 @@ This is the `continued` branch. This branch will contain the version of Lost Lev
 - Coldplay - My Universe
 - Coldplay - Spies
 - Coldplay - Fix You
+- Toby Fox - Imminent Death
+- Toby Fox - ASGORE

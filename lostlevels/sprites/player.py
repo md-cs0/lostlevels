@@ -44,6 +44,7 @@ class Player(engine.entity.Sprite, Humanoid):
         # Can this player actually move?
         self.moveable = True
         self.can_jump = True
+        self.can_sprint = True
         self.always_animate = False # If Player::moveable is False, should the player still animate itself?
 
         # Main player status.
@@ -72,7 +73,7 @@ class Player(engine.entity.Sprite, Humanoid):
 
         # Used for climbing the player.
         self.climbed_flagpole = False
-        self.climbing = False
+        self.climbing = None
         self.climb_velocity = 0
 
         # Name this entity for demo recordings.
@@ -106,8 +107,6 @@ class Player(engine.entity.Sprite, Humanoid):
 
             # Return.
             return
-        else:   
-            self.movetype = engine.entity.MOVETYPE_PHYSICS
 
         # Should this player be animated automatically?
         if self.always_animate or self.moveable:
@@ -143,8 +142,8 @@ class Player(engine.entity.Sprite, Humanoid):
         if keys[pygame.K_RIGHT]:
             self.move += 150
 
-        # Accelerate faster if the Z key is held.
-        if keys[pygame.K_z]:
+        # Accelerate faster if the Z key is held and the player can sprint.
+        if keys[pygame.K_z] and self.can_sprint:
             self.move *= 1.75
 
         # Jump upon pressing X.
@@ -280,6 +279,7 @@ class Player(engine.entity.Sprite, Humanoid):
         self.alive = False
 
         # Change the player to the death pose.
+        self.always_animate = False
         self.moveable = False
         self.index = 7
         self.velocity = pygame.math.Vector2(0, 500)
@@ -305,6 +305,13 @@ class Player(engine.entity.Sprite, Humanoid):
 
             # Update the player's spritesheet to the death cap one.
             self.set_spritesheet("player_death_cap")
+
+    # Set the climbing entity of the player. If set to null, the player's movetype is
+    # reset.
+    def set_climbing(self, other):
+        self.climbing = other
+        if not self.climbing:
+            self.movetype = engine.entity.MOVETYPE_PHYSICS
 
     # Hurt this player. This method should be used instead for downgrading the player or
     # killing the player outright. For always killing the player, see Level::death().
@@ -346,7 +353,7 @@ class Player(engine.entity.Sprite, Humanoid):
             return
         
         # Have the player walk into the distance.
-        self.climbing = False
+        self.set_climbing(None)
         self.moveable = False
         self.always_animate = True
         self.move = 150 * 1.75

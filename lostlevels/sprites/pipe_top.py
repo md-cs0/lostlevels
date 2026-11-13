@@ -1,4 +1,4 @@
-"""The top of a sprite. This can either be for cosmetics, or it can actually
+"""The top of a pipe. This can either be for cosmetics, or it can actually
 transport a player."""
 
 # Pipe orientation constants. These rotate clockwise.
@@ -14,7 +14,7 @@ import engine
 class PipeTop(engine.entity.Tile):
     # Construct a new pipe top.
     def __init__(self, eng, classname):
-        # Call the sprite constructor and modify its default properties.
+        # Call the tile constructor and modify its default properties.
         super().__init__(eng, classname)
         self.get_event("collisionfinal").set_func(PipeTop.collisionfinal)
 

@@ -25,6 +25,11 @@ class Frame(element.Element):
         self.__colour = colour
         self.__surface = None
 
+    # Set the size of this element.
+    def set_size(self, udim2):
+        super().set_size(udim2)
+        self.__surface = None
+
     # Draw this frame.
     def draw_frame(self, screen):
         if not self.__surface:

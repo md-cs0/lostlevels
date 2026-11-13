@@ -27,6 +27,14 @@ class LevelData():
         # Create a dictionary of groups of entities.
         self.groups = dict()
 
+        # If the biome is the cave biome, create some fog that makes the map 
+        # appear darker.
+        self._fog = eng.create_ui_element_by_class("frame")
+        self._fog.set_size(engine.ui.UDim2(1, 0, 1, 0))
+        self._fog.set_colour(pygame.Color(0, 0, 0, 200))
+        if biome == "cave":
+            self._fog.enabled = True
+
     # Called each frame.
     def per_frame(self):
         pass
@@ -42,6 +50,14 @@ class LevelData():
 
     # Called when the game is being unpaused.
     def unpause(self):
+        pass
+
+    # Called on KEYDOWN event.
+    def keydown(self, enum, unicode, focused):
+        pass
+
+    # Called on KEYUP event.
+    def keyup(self, enum, unicode, focused):
         pass
 
     # Called when the player is killed.
@@ -308,6 +324,17 @@ class LevelGenerator():
         
         # Return the tiles.
         return [tile1, tile2]
+
+    # Generate a door.
+    def generate_door(self, offset, section = None, player_offset = None, can_use = False):
+        door = self.__engine.create_entity_by_class("door", self.__engine.entity_head())
+        door.set_baseorigin(pygame.math.Vector2(offset))
+        door.can_use = can_use
+        door.use_dist = 10
+        door.level = self.__level
+        door.section = section
+        door.offset = player_offset
+        return door
     
     # Generate a Goomba.
     def generate_goomba(self, offset, length = 1, negate_speed = True, draw = True, spiked = False):
